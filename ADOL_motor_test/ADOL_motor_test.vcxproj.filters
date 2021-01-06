@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\dynamixel_sdk">
+      <UniqueIdentifier>{7d4d6e48-5e24-4c6c-b75f-96c6ca571a90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\chart_director">
+      <UniqueIdentifier>{9959b5c0-7d3f-48e8-be2e-ab3cad86430f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ADOL_motor_test.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ADOL_motor_testDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="control_table_MX28.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="control_table_XM430.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\dynamixel_sdk.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\group_bulk_read.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\group_bulk_write.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\group_sync_read.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\group_sync_write.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\packet_handler.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\port_handler.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\port_handler_arduino.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\port_handler_linux.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\port_handler_mac.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\port_handler_windows.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\protocol1_packet_handler.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="dynamixel_sdk\protocol2_packet_handler.h">
+      <Filter>Header Files\dynamixel_sdk</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartViewer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="chart_director\bchartdir.h">
+      <Filter>Header Files\chart_director</Filter>
+    </ClInclude>
+    <ClInclude Include="chart_director\chartdir.h">
+      <Filter>Header Files\chart_director</Filter>
+    </ClInclude>
+    <ClInclude Include="chart_director\FinanceChart.h">
+      <Filter>Header Files\chart_director</Filter>
+    </ClInclude>
+    <ClInclude Include="chart_director\memblock.h">
+      <Filter>Header Files\chart_director</Filter>
+    </ClInclude>
+    <ClInclude Include="ChartHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="ADOL_motor_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ADOL_motor_testDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartViewer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ChartHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="ADOL_motor_test.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\ADOL_motor_test.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\ADOL_motor_test.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
