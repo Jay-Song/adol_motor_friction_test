@@ -169,4 +169,5 @@ public:
 
   virtual BOOL PreTranslateMessage(MSG* pMsg);
   afx_msg void OnBnClickedSave();
+  CComboBox phidget_channel_combo_;
 };

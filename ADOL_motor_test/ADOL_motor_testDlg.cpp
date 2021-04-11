@@ -7,6 +7,7 @@
 #include "ADOL_motor_testDlg.h"
 #include "afxdialogex.h"
 
+#include <iostream>
 #include <fstream>
 
 #ifdef _DEBUG
@@ -69,6 +70,7 @@ void CADOL_motor_testDlg::DoDataExchange(CDataExchange* pDX)
   DDX_Control(pDX, IDC_CONNECT, connect_btn_);
   DDX_Control(pDX, IDC_CTRL_MODE_COMBO, ctrl_mode_combo_);
   DDX_Control(pDX, IDC_FORCE_CHART, force_chart_);
+  DDX_Control(pDX, IDC_CHANNEL, phidget_channel_combo_);
 }
 
 BEGIN_MESSAGE_MAP(CADOL_motor_testDlg, CDialogEx)
@@ -140,6 +142,12 @@ BOOL CADOL_motor_testDlg::OnInitDialog()
   ctrl_mode_combo_.AddString(L" 1: Velcoity");
   ctrl_mode_combo_.AddString(L"16: PWM");
 
+  phidget_channel_combo_.AddString(L"CH 0");
+  phidget_channel_combo_.AddString(L"CH 1");
+  phidget_channel_combo_.AddString(L"CH 2");
+  phidget_channel_combo_.AddString(L"CH 3");
+
+
   map_idx_to_ctrl_mode_[0] = 0;
   map_idx_to_ctrl_mode_[1] = 1;
   map_idx_to_ctrl_mode_[2] = 16;
@@ -188,8 +196,34 @@ BOOL CADOL_motor_testDlg::OnInitDialog()
   CString calib_factor1_str;
   CString calib_factor2_str;
 
-  calib_factor1_str.Format(_T("%.8f"), DEFAULT_CALIB_FACTOR1);
-  calib_factor2_str.Format(_T("%.8f"), DEFAULT_CALIB_FACTOR2);
+  std::ifstream calib_file_handler;
+
+  calib_file_handler.open("calib.txt");
+
+  if (!calib_file_handler.is_open())
+  {
+	  std::cout << "failed to open the calibration file" << std::endl;
+	  calib_factor1_str.Format(_T("%.8f"), DEFAULT_CALIB_FACTOR1);
+	  calib_factor2_str.Format(_T("%.8f"), DEFAULT_CALIB_FACTOR2);
+  }
+  else
+  {
+    std::cout << "succeeded in opening the calibration file" << std::endl;
+
+    std::string a;
+    double calib_factor = 0;
+    calib_file_handler >> a;
+    calib_file_handler >> calib_factor;
+    std::cout << "calib_factor1: " << calib_factor << std::endl;
+    calib_factor1_str.Format(_T("%.8f"), calib_factor);
+
+    calib_file_handler >> a;
+    calib_file_handler >> calib_factor;
+    std::cout << "calib_factor2: " << calib_factor << std::endl;
+    calib_factor2_str.Format(_T("%.8f"), calib_factor);
+  }
+
+  calib_file_handler.close();
 
   GetDlgItem(IDC_CALIB_FACOR1)->SetWindowTextW(calib_factor1_str);
   GetDlgItem(IDC_CALIB_FACOR2)->SetWindowTextW(calib_factor2_str);
@@ -443,8 +477,15 @@ void CADOL_motor_testDlg::changeGoalCurrent(void)
   {
     uint8_t dxl_error = 0;
     int dxl_result = dxl_packet_->write2ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_GOAL_CURRENT, goal_curr_xm430_, &dxl_error);
-    if(dxl_error != 0)
+    if (dxl_result != COMM_SUCCESS)
+    {
+      printf("%s\n", dxl_packet_->getTxRxResult(dxl_result));
+      return;
+    }
+
+    if (dxl_error != 0)
       printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
+
   }
 }
 
@@ -454,7 +495,13 @@ void CADOL_motor_testDlg::changeGoalVelocity(void)
   {
     uint8_t dxl_error = 0;
     int dxl_result = dxl_packet_->write4ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_GOAL_VELOCITY, goal_velocity_xm430_, &dxl_error);
-    if(dxl_error != 0)
+    if (dxl_result != COMM_SUCCESS)
+    {
+      printf("%s\n", dxl_packet_->getTxRxResult(dxl_result));
+      return;
+    }
+
+    if (dxl_error != 0)
       printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
   }
 }
@@ -465,8 +512,16 @@ void CADOL_motor_testDlg::changeGoalPWM(void)
   {
     uint8_t dxl_error = 0;
     int dxl_result = dxl_packet_->write2ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_GOAL_PWM, goal_pwm_xm430_, &dxl_error);
+
+  if (dxl_result != COMM_SUCCESS)
+  {
+    printf("%s\n", dxl_packet_->getTxRxResult(dxl_result));
+    return;
+  }
+
     if(dxl_error != 0)
       printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
+
   }
 }
 
@@ -579,18 +634,18 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
 
   if (test_dlg->print_enable_ == true)
   {
-	  test_dlg->arr_elapsed_time_.push_back(test_dlg->elapsed_time);
-	  test_dlg->arr_voltage_output_.push_back(test_dlg->voltage_output_);
-	  test_dlg->arr_goal_velocity_xm430_.push_back(test_dlg->goal_velocity_xm430_);
-	  test_dlg->arr_goal_pwm_xm430_.push_back(test_dlg->goal_pwm_xm430_);
-	  test_dlg->arr_goal_curr_xm430_.push_back(test_dlg->goal_curr_xm430_);
-	  test_dlg->arr_present_temperature_xm430_.push_back(test_dlg->present_temperature_xm430_);
-	  test_dlg->arr_present_current_xm430_.push_back(test_dlg->present_current_xm430_);
-	  test_dlg->arr_present_velocity_xm430_.push_back(test_dlg->present_velocity_xm430_);
-	  test_dlg->arr_present_position_xm430_.push_back(test_dlg->present_position_xm430_);
-	  test_dlg->arr_present_temperature_MX28_.push_back(test_dlg->present_temperature_MX28_);
-	  test_dlg->arr_present_velocity_MX28_.push_back(test_dlg->present_velocity_MX28_);
-	  test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
+    test_dlg->arr_elapsed_time_.push_back(test_dlg->elapsed_time);
+    test_dlg->arr_voltage_output_.push_back(test_dlg->voltage_output_);
+    test_dlg->arr_goal_velocity_xm430_.push_back(test_dlg->goal_velocity_xm430_);
+    test_dlg->arr_goal_pwm_xm430_.push_back(test_dlg->goal_pwm_xm430_);
+    test_dlg->arr_goal_curr_xm430_.push_back(test_dlg->goal_curr_xm430_);
+    test_dlg->arr_present_temperature_xm430_.push_back(test_dlg->present_temperature_xm430_);
+    test_dlg->arr_present_current_xm430_.push_back(test_dlg->present_current_xm430_);
+    test_dlg->arr_present_velocity_xm430_.push_back(test_dlg->present_velocity_xm430_);
+    test_dlg->arr_present_position_xm430_.push_back(test_dlg->present_position_xm430_);
+    test_dlg->arr_present_temperature_MX28_.push_back(test_dlg->present_temperature_MX28_);
+    test_dlg->arr_present_velocity_MX28_.push_back(test_dlg->present_velocity_MX28_);
+    test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
   }
 }
 
@@ -615,6 +670,10 @@ bool CADOL_motor_testDlg::initializePhidget(void)
   Phidget_setOnAttachHandler((PhidgetHandle)voltageRatioInput0_, onVoltageRatioInput0_Attach, NULL);
   Phidget_setOnDetachHandler((PhidgetHandle)voltageRatioInput0_, onVoltageRatioInput0_Detach, NULL);
   Phidget_setOnErrorHandler((PhidgetHandle)voltageRatioInput0_, onVoltageRatioInput0_Error, NULL);
+
+  std::cout << "phidget_channel_combo_.GetCurSel() : " << phidget_channel_combo_.GetCurSel() << std::endl;
+
+  Phidget_setChannel((PhidgetHandle)voltageRatioInput0_, 1);
 
   //Open your Phidgets and wait for attachment
   ret_ = Phidget_openWaitForAttachment((PhidgetHandle)voltageRatioInput0_, 5000);
@@ -655,7 +714,6 @@ bool CADOL_motor_testDlg::terminatePhidget(void)
 void CADOL_motor_testDlg::OnBnClickedExit()
 {
   // TODO: Add your control notification handler code here
-
 }
 
 void CADOL_motor_testDlg::OnBnClickedSet()
@@ -690,7 +748,7 @@ void CADOL_motor_testDlg::OnBnClickedConnect()
     return;
   }
 
-  if(turnTorqueOnDXL(true) == false)
+  if(turnTorqueOnDXL(true) == false) // to test, torque off
   {
     AfxMessageBox(L"Failed to initialize dxl param");
     terminateCommDXL();
@@ -709,6 +767,7 @@ void CADOL_motor_testDlg::OnBnClickedConnect()
   comport_combo_.EnableWindow(false);
   baud_combo_.EnableWindow(false);
   ctrl_mode_combo_.EnableWindow(false);
+  phidget_channel_combo_.EnableWindow(false);
 }
 
 void CADOL_motor_testDlg::OnCbnSelchangeComportCombo()
@@ -802,51 +861,51 @@ void CADOL_motor_testDlg::OnBnClickedClear()
 
 void CADOL_motor_testDlg::OnBnClickedSave()
 {
-	print_enable_ = false;
-	Sleep(8);
+  print_enable_ = false;
+  Sleep(8);
+  
+  std::ofstream log_file;
+  CTime cTime = CTime::GetCurrentTime(); // get current date and time
+  CString file_path;
+  file_path.Format(_T("log_%04d%02d%02d%02d%02d%02d.txt"),
+    cTime.GetYear(), cTime.GetMonth(),
+    cTime.GetDay(), cTime.GetHour(),
+    cTime.GetMinute(),
+    cTime.GetSecond());
+  
+  log_file.open(file_path);
+  
+  for(unsigned int arr_idx = 0; arr_idx < arr_elapsed_time_.size(); arr_idx++)
+  {
+  
+    log_file << arr_elapsed_time_[arr_idx] << "\t"
+      << arr_voltage_output_[arr_idx] << "\t"
+      << arr_goal_velocity_xm430_[arr_idx] << "\t"
+      << arr_goal_pwm_xm430_[arr_idx] << "\t"
+      << arr_goal_curr_xm430_[arr_idx] << "\t"
+      << arr_present_temperature_xm430_[arr_idx] << "\t"
+      << arr_present_current_xm430_[arr_idx] << "\t"
+      << arr_present_velocity_xm430_[arr_idx] << "\t"
+      << arr_present_position_xm430_[arr_idx] << "\t"
+      << arr_present_temperature_MX28_[arr_idx] << "\t"
+      << arr_present_velocity_MX28_[arr_idx] << "\t"
+      << arr_present_position_MX28_[arr_idx] << "\t" << std::endl;
+  }
 
-	std::ofstream log_file;
-	CTime cTime = CTime::GetCurrentTime(); // get current date and time
-	CString file_path;
-	file_path.Format(_T("log_%04d%02d%02d%02d%02d%02d.txt"),
-		cTime.GetYear(), cTime.GetMonth(),
-		cTime.GetDay(), cTime.GetHour(),
-		cTime.GetMinute(),
-		cTime.GetSecond());
-
-	log_file.open(file_path);
-
-	for(unsigned int arr_idx = 0; arr_idx < arr_elapsed_time_.size(); arr_idx++)
-	{
-		
-		log_file << arr_elapsed_time_[arr_idx] << "\t"
-			<< arr_voltage_output_[arr_idx] << "\t"
-			<< arr_goal_velocity_xm430_[arr_idx] << "\t"
-			<< arr_goal_pwm_xm430_[arr_idx] << "\t"
-			<< arr_goal_curr_xm430_[arr_idx] << "\t"
-			<< arr_present_temperature_xm430_[arr_idx] << "\t"
-			<< arr_present_current_xm430_[arr_idx] << "\t"
-			<< arr_present_velocity_xm430_[arr_idx] << "\t"
-			<< arr_present_position_xm430_[arr_idx] << "\t"
-			<< arr_present_temperature_MX28_[arr_idx] << "\t"
-			<< arr_present_velocity_MX28_[arr_idx] << "\t"
-			<< arr_present_position_MX28_[arr_idx] << "\t" << std::endl;
-	}
-
-	log_file.close();
-
-	arr_elapsed_time_.clear();
-	arr_voltage_output_.clear();
-	arr_goal_velocity_xm430_.clear();
-	arr_goal_pwm_xm430_.clear();
-	arr_goal_curr_xm430_.clear();
-	arr_present_temperature_xm430_.clear();
-	arr_present_current_xm430_.clear();
-	arr_present_velocity_xm430_.clear();
-	arr_present_position_xm430_.clear();
-	arr_present_temperature_MX28_.clear();
-	arr_present_velocity_MX28_.clear();
-	arr_present_position_MX28_.clear();
+  log_file.close();
+  
+  arr_elapsed_time_.clear();
+  arr_voltage_output_.clear();
+  arr_goal_velocity_xm430_.clear();
+  arr_goal_pwm_xm430_.clear();
+  arr_goal_curr_xm430_.clear();
+  arr_present_temperature_xm430_.clear();
+  arr_present_current_xm430_.clear();
+  arr_present_velocity_xm430_.clear();
+  arr_present_position_xm430_.clear();
+  arr_present_temperature_MX28_.clear();
+  arr_present_velocity_MX28_.clear();
+  arr_present_position_MX28_.clear();
 }
 
 
