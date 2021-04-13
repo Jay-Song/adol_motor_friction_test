@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\dynamixel_sdk">
-      <UniqueIdentifier>{7d4d6e48-5e24-4c6c-b75f-96c6ca571a90}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\chart_director">
       <UniqueIdentifier>{9959b5c0-7d3f-48e8-be2e-ab3cad86430f}</UniqueIdentifier>
     </Filter>
@@ -38,51 +35,6 @@
     </ClInclude>
     <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="control_table_MX28.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="control_table_XM430.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\dynamixel_sdk.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\group_bulk_read.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\group_bulk_write.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\group_sync_read.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\group_sync_write.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\packet_handler.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\port_handler.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\port_handler_arduino.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\port_handler_linux.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\port_handler_mac.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\port_handler_windows.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\protocol1_packet_handler.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
-    </ClInclude>
-    <ClInclude Include="dynamixel_sdk\protocol2_packet_handler.h">
-      <Filter>Header Files\dynamixel_sdk</Filter>
     </ClInclude>
     <ClInclude Include="ChartViewer.h">
       <Filter>Header Files</Filter>

@@ -205,6 +205,8 @@ BOOL CADOL_motor_testDlg::OnInitDialog()
 	  std::cout << "failed to open the calibration file" << std::endl;
 	  calib_factor1_str.Format(_T("%.8f"), DEFAULT_CALIB_FACTOR1);
 	  calib_factor2_str.Format(_T("%.8f"), DEFAULT_CALIB_FACTOR2);
+    calib_factor1_ = DEFAULT_CALIB_FACTOR1;
+    calib_factor2_ = DEFAULT_CALIB_FACTOR2;
   }
   else
   {
@@ -216,11 +218,13 @@ BOOL CADOL_motor_testDlg::OnInitDialog()
     calib_file_handler >> calib_factor;
     std::cout << "calib_factor1: " << calib_factor << std::endl;
     calib_factor1_str.Format(_T("%.8f"), calib_factor);
+    calib_factor1_ = calib_factor;
 
     calib_file_handler >> a;
     calib_file_handler >> calib_factor;
     std::cout << "calib_factor2: " << calib_factor << std::endl;
     calib_factor2_str.Format(_T("%.8f"), calib_factor);
+    calib_factor2_ = calib_factor;
   }
 
   calib_file_handler.close();
