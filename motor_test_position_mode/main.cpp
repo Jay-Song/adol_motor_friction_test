@@ -66,6 +66,8 @@ int max_voltage_measure_count = 250;
 double voltage_output[250];
 int voltage_measure_count = max_voltage_measure_count;
 
+void saveLog(void);
+
 
 struct measured_data
 {
@@ -190,7 +192,7 @@ int main(void)
       break;
   }
 
-
+  saveLog();
 
   return 0;
 }
