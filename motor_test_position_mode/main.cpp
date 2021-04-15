@@ -71,6 +71,7 @@ void saveLog(void);
 
 struct measured_data
 {
+  int xm430_position_;
   int mx28_position_;
   double load_cell_;
   double load_cell_stddev_;
@@ -163,6 +164,7 @@ int main(void)
     double vol_avg, vol_stddev;
     calculateVoltageAvgStddev(&vol_avg, &vol_stddev);
 
+    _data.xm430_position_ = present_position_xm430_;
     _data.mx28_position_ = present_position_MX28_;
     _data.load_cell_ = vol_avg;
     _data.load_cell_stddev_ = vol_stddev;
@@ -172,20 +174,31 @@ int main(void)
 
     std::cout << "MX28pos: " << present_position_MX28_ << " vol_avg: " << vol_avg << " vol_stddev: " << vol_stddev << " position_interval_: " << position_interval_ << std::endl;
 
-    goal_position_xm430_ += position_interval_;
+    //goal_position_xm430_ += position_interval_;
 
-    if (goal_position_xm430_ > 4095)
+    //if (goal_position_xm430_ > 4095)
+    //{
+    //  goal_position_xm430_ = 4095;
+    //  position_interval_ = position_interval_*(-1);
+
+    //  rotation_count += 1;
+    //}
+
+    //if (goal_position_xm430_ < 0)
+    //{
+    //  goal_position_xm430_ = 0;
+    //  position_interval_ = position_interval_*(-1);
+    //}
+
+    if (present_position_MX28_ < 0)
     {
-      goal_position_xm430_ = 4095;
       position_interval_ = position_interval_*(-1);
-
-      rotation_count += 1;
     }
 
-    if (goal_position_xm430_ < 0)
+    if (present_position_MX28_ > 4095)
     {
-      goal_position_xm430_ = 0;
       position_interval_ = position_interval_*(-1);
+      rotation_count += 1;
     }
 
     if (rotation_count > nrotation_)
@@ -315,7 +328,7 @@ bool initializeDXLParam(void)
 
 
   // change operating mode of brake motor
-  dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_OPERATING_MODE, 3, &dxl_error);
+  dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_OPERATING_MODE, 4, &dxl_error);
   if (dxl_result == COMM_SUCCESS)
   {
     printf("Succeeded in changing Operating Mode\n");
@@ -517,7 +530,7 @@ void saveLog(void)
       << 0 << "\t"
       << 0 << "\t"
       << measured_data_arr[arr_idx].position_interval_ << "\t"
-      << 0 << "\t"
+      << measured_data_arr[arr_idx].xm430_position_ << "\t"
       << 0 << "\t"
       << 0 << "\t"
       << measured_data_arr[arr_idx].mx28_position_ << "\t" << std::endl;
