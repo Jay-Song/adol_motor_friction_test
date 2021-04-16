@@ -89,7 +89,7 @@ int main(void)
 
   std::cout << "Baud Rate: ";
   std::cin >> baud_num_;
-  
+
   std::stringstream ss;
   ss << "COM" << comport_num_;
 
@@ -107,7 +107,7 @@ int main(void)
   Phidget_setOnDetachHandler((PhidgetHandle)voltage_ratio_Input, detachVoltageRatioInput, NULL);
   Phidget_setOnErrorHandler((PhidgetHandle)voltage_ratio_Input, onVoltageRatioInputError, NULL);
   Phidget_setChannel((PhidgetHandle)voltage_ratio_Input, channel_num_);
-  
+
 
   // Initialize Test Para
   std::cout << "Position Interval: ";
@@ -174,8 +174,6 @@ int main(void)
 
     std::cout << "MX28pos: " << present_position_MX28_ << " vol_avg: " << vol_avg << " vol_stddev: " << vol_stddev << " position_interval_: " << position_interval_ << std::endl;
 
-    //goal_position_xm430_ += position_interval_;
-
     //if (goal_position_xm430_ > 4095)
     //{
     //  goal_position_xm430_ = 4095;
@@ -193,13 +191,18 @@ int main(void)
     if (present_position_MX28_ < 0)
     {
       position_interval_ = position_interval_*(-1);
+      goal_position_xm430_ += present_position_MX28_;
     }
 
     if (present_position_MX28_ > 4095)
     {
       position_interval_ = position_interval_*(-1);
+      goal_position_xm430_ += (present_position_MX28_ - 4095);
+
       rotation_count += 1;
     }
+
+    goal_position_xm430_ += position_interval_;
 
     if (rotation_count > nrotation_)
       break;
@@ -462,19 +465,19 @@ bool changeGoalPosition(void)
 {
   //if ((goal_position_xm430_ >= -200) || (goal_position_xm430_ <= 200))
   //{
-    uint8_t dxl_error = 0;
-    int dxl_result = dxl_packet_->write4ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_GOAL_POSITION, goal_position_xm430_, &dxl_error);
-    if (dxl_result != COMM_SUCCESS)
-    {
-      //printf("%s\n", dxl_packet_->getTxRxResult(dxl_result));
-      return false;
-    }
+  uint8_t dxl_error = 0;
+  int dxl_result = dxl_packet_->write4ByteTxRx(dxl_port_, dxl_id_brake_, XM430::ADDR_GOAL_POSITION, goal_position_xm430_, &dxl_error);
+  if (dxl_result != COMM_SUCCESS)
+  {
+    //printf("%s\n", dxl_packet_->getTxRxResult(dxl_result));
+    return false;
+  }
 
-    //if (dxl_error != 0)
-    //  printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
+  //if (dxl_error != 0)
+  //  printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
   //}
 
-    return true;
+  return true;
 }
 
 void calculateVoltageAvgStddev(double *avg, double *stddev)
@@ -499,11 +502,11 @@ void calculateVoltageAvgStddev(double *avg, double *stddev)
 }
 
 const std::string currentDateTime() {
-  time_t     now = time(0); //save current time into time_t 
+  time_t     now = time(0); //save current time into time_t
   struct tm  tstruct;
-//  char       buf[80];
+  //  char       buf[80];
   tstruct = *localtime(&now);
-//  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss 형태의 스트링
+  //  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss ?????? ½ºÆ®¸?
 
   std::stringstream ss;
   ss << tstruct.tm_year + 1900 << tstruct.tm_mon
