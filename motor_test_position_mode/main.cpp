@@ -188,19 +188,19 @@ int main(void)
     //  position_interval_ = position_interval_*(-1);
     //}
 
-    if (present_position_MX28_ < 0)
-    {
-      position_interval_ = position_interval_*(-1);
-      goal_position_xm430_ += present_position_MX28_;
-    }
+    //if (present_position_MX28_ < 0)
+    //{
+    //  position_interval_ = position_interval_*(-1);
+    //  goal_position_xm430_ += present_position_MX28_;
+    //}
 
-    if (present_position_MX28_ > 4095)
-    {
-      position_interval_ = position_interval_*(-1);
-      goal_position_xm430_ += (present_position_MX28_ - 4095);
+    //if (present_position_MX28_ > 4095)
+    //{
+    //  position_interval_ = position_interval_*(-1);
+    //  goal_position_xm430_ += (present_position_MX28_ - 4095);
 
-      rotation_count += 1;
-    }
+    //  rotation_count += 1;
+    //}
 
     goal_position_xm430_ += position_interval_;
 
