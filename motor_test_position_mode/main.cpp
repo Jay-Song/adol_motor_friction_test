@@ -204,6 +204,8 @@ int main(void)
 
     goal_position_xm430_ += position_interval_;
 
+    rotation_count = abs(present_position_MX28_ / 4095);
+
     if (rotation_count > nrotation_)
       break;
   }
