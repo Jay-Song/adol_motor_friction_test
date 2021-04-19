@@ -204,10 +204,13 @@ int main(void)
 
     goal_position_xm430_ += position_interval_;
 
-    rotation_count = abs(present_position_MX28_ / 4095);
+    rotation_count = abs( (int)(present_position_MX28_ / 4095));
 
     if (rotation_count > nrotation_)
+    {
+      std::cout << "rotation_count: " << rotation_count << " nrot: " << nrotation_ << std::endl;
       break;
+    }
   }
 
   saveLog();
