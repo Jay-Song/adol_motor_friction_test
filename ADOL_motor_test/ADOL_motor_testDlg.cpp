@@ -20,6 +20,9 @@
 
 #define DRAWING_TIMER (1)
 
+CMutex g_mutex(FALSE, NULL);
+
+
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialogEx
@@ -660,8 +663,10 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
     test_dlg->arr_present_velocity_MX28_.push_back(test_dlg->present_velocity_MX28_);
     test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
 
+    g_mutex.Lock();
     test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
     test_dlg->scailed_force_raw_.push_back(test_dlg->measured_force_N_);
+    g_mutex.Unlock();
   }
 }
 
@@ -1035,38 +1040,26 @@ void CADOL_motor_testDlg::drawChart(CChartViewer *viewer)
   c->xAxis()->setWidth(2);
   c->yAxis()->setWidth(2);
 
+  g_mutex.Lock();
   // Now we add the data to the chart. 
-  //double lastTime = m_timeStamps[sampleSize - 1];
   if (scailed_force_raw_.size() != 0)
   {
-  //  // Set up the x-axis to show the time range in the data buffer
+    // Set up the x-axis to show the time range in the data buffer
     c->xAxis()->setDateScale(time_stamps[1], time_stamps[time_stamps.size() -1]);
 
-  //  // Set the x-axis label format
-  //  c->xAxis()->setLabelFormat("{value|hh:nn:ss}");
-
-  //  // Create a line layer to plot the lines
+    // Create a line layer to plot the lines
     LineLayer *layer = c->addLineLayer();
 
-  //  // The x-coordinates are the timeStamps.
+    // The x-coordinates are the timeStamps.
     layer->setXData(DoubleArray(&time_stamps[1], scailed_force_raw_.size()));
 
-  //  // The 3 data series are used to draw 3 lines. Here we put the latest data values
-  //  // as part of the data set name, so you can see them updated in the legend box.
-  //  char buffer[1024];
-
-  //  sprintf(buffer, "Alpha: <*bgColor=FFCCCC*> %.2f ", m_dataSeriesA[sampleSize - 1]);
-  //  layer->addDataSet(DoubleArray(m_dataSeriesA, sampleSize), 0xff0000, buffer);
+    // The 1 data series are used to draw 1 lines. Here we get the latest data set
     layer->addDataSet(DoubleArray(&scailed_force_raw_[0], scailed_force_raw_.size()), 0xff0000);
-  //  sprintf(buffer, "Beta: <*bgColor=CCFFCC*> %.2f ", m_dataSeriesB[sampleSize - 1]);
-  //  layer->addDataSet(DoubleArray(m_dataSeriesB, sampleSize), 0x00cc00, buffer);
-
-  //  sprintf(buffer, "Gamma: <*bgColor=CCCCFF*> %.2f ", m_dataSeriesC[sampleSize - 1]);
-  //  layer->addDataSet(DoubleArray(m_dataSeriesC, sampleSize), 0x0000ff, buffer);
   }
 
   // Set the chart image to the WinChartViewer
   viewer->setChart(c);
+  g_mutex.Unlock();
   delete c;
 }
 
