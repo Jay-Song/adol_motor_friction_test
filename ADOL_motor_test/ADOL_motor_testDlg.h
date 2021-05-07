@@ -76,6 +76,11 @@ public:
   std::vector<double> dxl_test_vel_raw_;
   std::vector<double> dxl_brake_vel_raw_;
 
+  bool chart_drawing_;
+  
+  int m_extBgColor;
+  void drawChart(CChartViewer *viewer);
+  int getDefaultBgColor();
 
   //for dxl
   dynamixel::PortHandler*   dxl_port_;

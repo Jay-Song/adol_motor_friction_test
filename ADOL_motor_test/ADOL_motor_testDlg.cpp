@@ -18,6 +18,8 @@
 #define DEFAULT_CALIB_FACTOR1 (1048659.47918428)
 #define DEFAULT_CALIB_FACTOR2 (-1838.691939)
 
+#define DRAWING_TIMER (1)
+
 // CAboutDlg dialog used for App About
 
 class CAboutDlg : public CDialogEx
@@ -233,6 +235,12 @@ BOOL CADOL_motor_testDlg::OnInitDialog()
   GetDlgItem(IDC_CALIB_FACOR2)->SetWindowTextW(calib_factor2_str);
 
   comm_ = false;
+
+  //chart related.
+  m_extBgColor = getDefaultBgColor();
+  drawChart(&force_chart_);
+  chart_drawing_ = false;
+
 
   return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -586,6 +594,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
 
   test_dlg->voltage_output_ = voltageRatio;
   test_dlg->measured_force_N_ = voltageRatio*test_dlg->calib_factor1_ + test_dlg->calib_factor2_;
+  
 
   if(test_dlg->dxl_ctrl_mode_ == 0)
   {
@@ -650,6 +659,9 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
     test_dlg->arr_present_temperature_MX28_.push_back(test_dlg->present_temperature_MX28_);
     test_dlg->arr_present_velocity_MX28_.push_back(test_dlg->present_velocity_MX28_);
     test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
+
+    test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
+    test_dlg->scailed_force_raw_.push_back(test_dlg->measured_force_N_);
   }
 }
 
@@ -817,9 +829,7 @@ void CADOL_motor_testDlg::OnBnClickedSetCalib()
 }
 
 void CADOL_motor_testDlg::OnBnClickedStart()
-{
-  print_enable_ = true;
-   
+{  
   arr_elapsed_time_.clear();
   arr_voltage_output_.clear();
   arr_goal_velocity_xm430_.clear();
@@ -833,19 +843,31 @@ void CADOL_motor_testDlg::OnBnClickedStart()
   arr_present_velocity_MX28_.clear();
   arr_present_position_MX28_.clear();
 
-  //SetTimer
+  time_stamps.clear();
+  time_stamps.push_back(0);
+  scailed_force_raw_.clear();
+
+  print_enable_ = true;
+  chart_drawing_ = true;
+
+  SetTimer(DRAWING_TIMER, 100, NULL);
 }
 
 void CADOL_motor_testDlg::OnBnClickedStop()
 {
+  chart_drawing_ = false;
   print_enable_ = false;
+
+  KillTimer(DRAWING_TIMER);
 }
 
 void CADOL_motor_testDlg::OnBnClickedClear()
 {
   system("cls");
-  bool curr_print_ = print_enable_;
+  bool curr_print = print_enable_;
+  bool curr_drawing = chart_drawing_;
   print_enable_ = false;
+  chart_drawing_ = false;
 
   arr_elapsed_time_.clear();
   arr_voltage_output_.clear();
@@ -860,7 +882,12 @@ void CADOL_motor_testDlg::OnBnClickedClear()
   arr_present_velocity_MX28_.clear();
   arr_present_position_MX28_.clear();
 
-  print_enable_ = curr_print_;
+  time_stamps.clear();
+  time_stamps.push_back(0);
+  scailed_force_raw_.clear();
+
+  print_enable_ = curr_print;
+  chart_drawing_ = curr_drawing;
 }
 
 void CADOL_motor_testDlg::OnBnClickedSave()
@@ -951,6 +978,10 @@ void CADOL_motor_testDlg::OnBnClickedSetCurr()
 void CADOL_motor_testDlg::OnTimer(UINT_PTR nIDEvent)
 {
   // TODO: Add your message handler code here and/or call default
+  if ((nIDEvent == DRAWING_TIMER) && (chart_drawing_ == true))
+  {
+    drawChart(&force_chart_);
+  }
 
   CDialogEx::OnTimer(nIDEvent);
 }
@@ -976,5 +1007,75 @@ BOOL CADOL_motor_testDlg::PreTranslateMessage(MSG* pMsg)
   return CDialogEx::PreTranslateMessage(pMsg);
 }
 
+void CADOL_motor_testDlg::drawChart(CChartViewer *viewer)
+{
+  // Create an XYChart object 1270 x 470 pixels in size, with light grey (f4f4f4) 
+  // background, black (000000) border, 1 pixel raised effect, and with a rounded frame.
+  XYChart *c = new XYChart(1270, 470, 0xf4f4f4, 0x000000, 1);
+  c->setRoundedFrame(m_extBgColor);
 
+  // Set the plotarea at (55, 62) and of size 1190 x 370 pixels. Use white (ffffff) 
+  // background. Enable both horizontal and vertical grids by setting their colors to 
+  // grey (cccccc). Set clipping mode to clip the data lines to the plot area.
+  c->setPlotArea(40, 62, 1190, 370, 0xffffff, -1, -1, 0xcccccc, 0xcccccc);
+  c->setClipping();
 
+  // Add a title to the chart using 15 pts Times New Roman Bold Italic font, with a light
+  // grey (dddddd) background, black (000000) border, and a glass like raised effect.
+  c->addTitle("Friction Test Result", "timesbi.ttf", 15)->setBackground(0xdddddd, 0x000000, Chart::glassEffect());
+
+  // Configure the y-axis with a 10pts Arial Bold axis title
+  c->yAxis()->setTitle("load cell output (g)", "arialbd.ttf", 10);
+
+  // Configure the x-axis to auto-scale with at least 75 pixels between major tick and 
+  // 15  pixels between minor ticks. This shows more minor grid lines on the chart.
+  c->xAxis()->setTickDensity(75, 15);
+
+  // Set the axes width to 2 pixels
+  c->xAxis()->setWidth(2);
+  c->yAxis()->setWidth(2);
+
+  // Now we add the data to the chart. 
+  //double lastTime = m_timeStamps[sampleSize - 1];
+  if (scailed_force_raw_.size() != 0)
+  {
+  //  // Set up the x-axis to show the time range in the data buffer
+    c->xAxis()->setDateScale(time_stamps[1], time_stamps[time_stamps.size() -1]);
+
+  //  // Set the x-axis label format
+  //  c->xAxis()->setLabelFormat("{value|hh:nn:ss}");
+
+  //  // Create a line layer to plot the lines
+    LineLayer *layer = c->addLineLayer();
+
+  //  // The x-coordinates are the timeStamps.
+    layer->setXData(DoubleArray(&time_stamps[1], scailed_force_raw_.size()));
+
+  //  // The 3 data series are used to draw 3 lines. Here we put the latest data values
+  //  // as part of the data set name, so you can see them updated in the legend box.
+  //  char buffer[1024];
+
+  //  sprintf(buffer, "Alpha: <*bgColor=FFCCCC*> %.2f ", m_dataSeriesA[sampleSize - 1]);
+  //  layer->addDataSet(DoubleArray(m_dataSeriesA, sampleSize), 0xff0000, buffer);
+    layer->addDataSet(DoubleArray(&scailed_force_raw_[0], scailed_force_raw_.size()), 0xff0000);
+  //  sprintf(buffer, "Beta: <*bgColor=CCFFCC*> %.2f ", m_dataSeriesB[sampleSize - 1]);
+  //  layer->addDataSet(DoubleArray(m_dataSeriesB, sampleSize), 0x00cc00, buffer);
+
+  //  sprintf(buffer, "Gamma: <*bgColor=CCCCFF*> %.2f ", m_dataSeriesC[sampleSize - 1]);
+  //  layer->addDataSet(DoubleArray(m_dataSeriesC, sampleSize), 0x0000ff, buffer);
+  }
+
+  // Set the chart image to the WinChartViewer
+  viewer->setChart(c);
+  delete c;
+}
+
+int CADOL_motor_testDlg::getDefaultBgColor()
+{
+  LOGBRUSH LogBrush;
+  HBRUSH hBrush = (HBRUSH)SendMessage(WM_CTLCOLORDLG, (WPARAM)CClientDC(this).m_hDC,
+    (LPARAM)m_hWnd);
+  ::GetObject(hBrush, sizeof(LOGBRUSH), &LogBrush);
+  int ret = LogBrush.lbColor;
+  return ((ret & 0xff) << 16) | (ret & 0xff00) | ((ret & 0xff0000) >> 16);
+}
