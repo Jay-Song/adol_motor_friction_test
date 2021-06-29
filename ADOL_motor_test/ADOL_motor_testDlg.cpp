@@ -891,6 +891,8 @@ void CADOL_motor_testDlg::OnBnClickedClear()
   time_stamps.push_back(0);
   scailed_force_raw_.clear();
 
+  drawChart(&force_chart_);
+
   print_enable_ = curr_print;
   chart_drawing_ = curr_drawing;
 }
@@ -903,11 +905,34 @@ void CADOL_motor_testDlg::OnBnClickedSave()
   std::ofstream log_file;
   CTime cTime = CTime::GetCurrentTime(); // get current date and time
   CString file_path;
-  file_path.Format(_T("log_%04d%02d%02d%02d%02d%02d.txt"),
-    cTime.GetYear(), cTime.GetMonth(),
-    cTime.GetDay(), cTime.GetHour(),
-    cTime.GetMinute(),
-    cTime.GetSecond());
+  if (dxl_ctrl_mode_ == 0)
+    file_path.Format(_T("log_cur%d_%04d%02d%02d%02d%02d%02d.txt"),
+      arr_goal_curr_xm430_[0],
+      cTime.GetYear(), cTime.GetMonth(),
+      cTime.GetDay(), cTime.GetHour(),
+      cTime.GetMinute(),
+      cTime.GetSecond());
+  else if (dxl_ctrl_mode_ == 1)
+    file_path.Format(_T("log_vel%d_%04d%02d%02d%02d%02d%02d.txt"),
+      arr_goal_velocity_xm430_[0],
+      cTime.GetYear(), cTime.GetMonth(),
+      cTime.GetDay(), cTime.GetHour(),
+      cTime.GetMinute(),
+      cTime.GetSecond());
+  else
+    file_path.Format(_T("log_pwm%d_%04d%02d%02d%02d%02d%02d.txt"),
+      arr_goal_pwm_xm430_[0],
+      cTime.GetYear(), cTime.GetMonth(),
+      cTime.GetDay(), cTime.GetHour(),
+      cTime.GetMinute(),
+      cTime.GetSecond());
+
+  //file_path.Format(_T("log_vel%d_pwm%d_cur%d_%04d%02d%02d%02d%02d%02d.txt"),
+  //  arr_goal_velocity_xm430_[0], arr_goal_pwm_xm430_[0], arr_goal_curr_xm430_[0],
+  //  cTime.GetYear(), cTime.GetMonth(),
+  //  cTime.GetDay(), cTime.GetHour(),
+  //  cTime.GetMinute(),
+  //  cTime.GetSecond());
   
   log_file.open(file_path);
   
@@ -919,11 +944,11 @@ void CADOL_motor_testDlg::OnBnClickedSave()
       << arr_goal_velocity_xm430_[arr_idx] << "\t"
       << arr_goal_pwm_xm430_[arr_idx] << "\t"
       << arr_goal_curr_xm430_[arr_idx] << "\t"
-      << arr_present_temperature_xm430_[arr_idx] << "\t"
+      << (unsigned int) arr_present_temperature_xm430_[arr_idx] << "\t"
       << arr_present_current_xm430_[arr_idx] << "\t"
       << arr_present_velocity_xm430_[arr_idx] << "\t"
       << arr_present_position_xm430_[arr_idx] << "\t"
-      << arr_present_temperature_MX28_[arr_idx] << "\t"
+      << (unsigned int) arr_present_temperature_MX28_[arr_idx] << "\t"
       << arr_present_velocity_MX28_[arr_idx] << "\t"
       << arr_present_position_MX28_[arr_idx] << "\t" << std::endl;
   }

@@ -22,7 +22,7 @@ int voltage_measure_count = 625;
 void waitForMeasuringEnd();
 void calculateVoltageAvgStddev(double *avg, double *stddev);
 
-double lever_arm_on_mass = 209.0;
+double lever_arm_on_mass = 212.0;
 
 int main(void)
 {
