@@ -35,6 +35,7 @@
 
 
 
+#pragma comment(linker, "/ENTRY:wWinMainCRTStartup /subsystem:console")
 
 
 

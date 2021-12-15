@@ -138,12 +138,12 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   //Initializing control mode combo
   driving_ctrl_mode_combo_.AddString(L" 0: Current");
   driving_ctrl_mode_combo_.AddString(L" 1: Velcoity");
-  driving_ctrl_mode_combo_.AddString(L" 3: Velcoity");
+  driving_ctrl_mode_combo_.AddString(L" 3: Position");
   driving_ctrl_mode_combo_.AddString(L"16: PWM");
 
   test_ctrl_mode_combo_.AddString(L" 0: Invalid");
   test_ctrl_mode_combo_.AddString(L" 1: Velcoity");
-  test_ctrl_mode_combo_.AddString(L" 3: Velcoity");
+  test_ctrl_mode_combo_.AddString(L" 3: Position");
   test_ctrl_mode_combo_.AddString(L"16: PWM");
 
   phidget_channel_combo_.AddString(L"CH 0");
@@ -254,7 +254,9 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
 
   data_idx_ = 0;
 
-	return TRUE;  // return TRUE  unless you set the focus to a control
+  ctrl_flag_ = false;
+
+  return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 void CADOL_motor_validationDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -625,6 +627,9 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   test_dlg->changeGoalValues();
   test_dlg->readValuesFromDXLsTx();
 
+  test_dlg->arduino_.txRxPacket();
+  float curr = test_dlg->arduino_.getCurrent();
+
   test_dlg->readValuesFromDXLsRx();
 
   test_dlg->voltage_output_ = voltageRatio;
@@ -632,7 +637,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
 
 
   if (test_dlg->print_enable_ == true)
-    printf("t: %lf vol*10^8: %lf f: %lf gc : %d cv: %d cp: %d ct: %d cc: %d mcv: %d mcp: %d mct: %d\n",
+    printf("t: %lf vol*10^8: %lf f: %lf gc : %d cv: %d cp: %d ct: %d cc: %d mcv: %d mcp: %d mct: %d curr: %f\n",
       test_dlg->elapsed_time,
       voltageRatio*100000000.0,
       test_dlg->measured_force_N_,
@@ -643,7 +648,8 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
       test_dlg->present_current_xm430_,
       test_dlg->present_velocity_MX28_,
       test_dlg->present_position_MX28_,
-      test_dlg->present_temperature_MX28_);
+      test_dlg->present_temperature_MX28_,
+      curr);
 
   if (test_dlg->print_enable_ == true)
   {
@@ -659,6 +665,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
     test_dlg->arr_present_temperature_MX28_.push_back(test_dlg->present_temperature_MX28_);
     test_dlg->arr_present_velocity_MX28_.push_back(test_dlg->present_velocity_MX28_);
     test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
+    test_dlg->arr_arduino_curr_.push_back(curr);
 
     g_mutex.Lock();
     test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
@@ -669,7 +676,14 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
 
 void CADOL_motor_validationDlg::updateGoalValues(void)
 {
+  if (ctrl_flag_ == false)
+    return;
+
   data_idx_++;
+
+  if (data_idx_ >= goal_vel_xm430_list_.size())
+    data_idx_ = 0;
+
   goal_velocity_xm430_.i32_value = goal_vel_xm430_list_[data_idx_];
   goal_pwm_mx28_.i16_value = goal_pwm_mx28_list_[data_idx_];
 
@@ -703,6 +717,8 @@ void CADOL_motor_validationDlg::loadData(void)
 }
 
 
+
+
 void __stdcall onVoltageRatioInput0_Attach(PhidgetHandle ch, void * ctx) {
   printf("Attach!\n");
 }
@@ -716,39 +732,262 @@ void __stdcall onVoltageRatioInput0_Error(PhidgetHandle ch, void * ctx, Phidget_
   printf("----------\n");
 }
 
+bool CADOL_motor_validationDlg::initializePhidget(void)
+{
+  PhidgetLog_enable(PHIDGET_LOG_INFO, "phidgetlog.log");
+  PhidgetVoltageRatioInput_create(&voltageRatioInput0_);
+  PhidgetVoltageRatioInput_setOnVoltageRatioChangeHandler(voltageRatioInput0_, onVoltageRatioInput0_VoltageRatioChange, this);
+  Phidget_setOnAttachHandler((PhidgetHandle)voltageRatioInput0_, onVoltageRatioInput0_Attach, NULL);
+  Phidget_setOnDetachHandler((PhidgetHandle)voltageRatioInput0_, onVoltageRatioInput0_Detach, NULL);
+  Phidget_setOnErrorHandler((PhidgetHandle)voltageRatioInput0_, onVoltageRatioInput0_Error, NULL);
+
+  std::cout << "phidget_channel_combo_.GetCurSel() : " << phidget_channel_combo_.GetCurSel() << std::endl;
+
+  Phidget_setChannel((PhidgetHandle)voltageRatioInput0_, 1);
+
+  //Open your Phidgets and wait for attachment
+  ret_ = Phidget_openWaitForAttachment((PhidgetHandle)voltageRatioInput0_, 5000);
+  if (ret_ != EPHIDGET_OK) {
+    Phidget_getLastError(&errorCode_, &errorString_, errorDetail_, &errorDetailLen_);
+    printf("Error (%d): %s", errorCode_, errorString_);
+    return false;
+  }
+
+  QueryPerformanceCounter(&BeginTime);
+  //Set the Data Interval of the Device to 8 ms
+  ret_ = Phidget_setDataInterval((PhidgetHandle)voltageRatioInput0_, 8);
+  if (ret_ != EPHIDGET_OK) {
+    Phidget_getLastError(&errorCode_, &errorString_, errorDetail_, &errorDetailLen_);
+    printf("Error (%d): %s", errorCode_, errorString_);
+    return false;
+  }
+  comm_ = true;
+  return true;
+}
+
+bool CADOL_motor_validationDlg::terminatePhidget(void)
+{
+  comm_ = false;
+  Sleep(16);
+  ret_ = Phidget_close((PhidgetHandle)voltageRatioInput0_);
+  if (ret_ != EPHIDGET_OK) {
+    Phidget_getLastError(&errorCode_, &errorString_, errorDetail_, &errorDetailLen_);
+    printf("Error (%d): %s", errorCode_, errorString_);
+    //exit(1);
+  }
+  PhidgetVoltageRatioInput_delete(&voltageRatioInput0_);
+
+  return true;
+}
+
 
 void CADOL_motor_validationDlg::OnBnClickedConnect()
 {
   // TODO: Add your control notification handler code here
+  if (initializeCommDXL() == false)
+  {
+    AfxMessageBox(L"Failed to connect to USB2DXL");
+    return;
+  }
+
+  if (turnTorqueOnDXL(false) == false)
+  {
+    AfxMessageBox(L"Failed to initialize dxl param");
+    terminateCommDXL();
+    return;
+  }
+
+  if (initializeDXLParam() == false)
+  {
+    AfxMessageBox(L"Failed to initialize dxl param");
+    terminateCommDXL();
+    return;
+  }
+
+  if (turnTorqueOnDXL(true) == false) // to test, torque off
+  {
+    AfxMessageBox(L"Failed to initialize dxl param");
+    terminateCommDXL();
+    return;
+  }
+
+  if (initializePhidget() == false)
+  {
+    AfxMessageBox(L"Failed to connect to Phiget");
+    terminateCommDXL();
+    terminatePhidget();
+    return;
+  }
+
+  CString port_string;
+  this->arduino_combo_.GetLBText(this->arduino_combo_.GetCurSel(), port_string);
+  std::string port = std::string(CT2CA(port_string));
+  if (arduino_.connect(port, 1000000) != true)
+  {
+    AfxMessageBox(L"Failed to connect to Arduino");
+    return;
+  }
+
+  loadData();
+  //connect_btn_.EnableWindow(false);
+  //comport_combo_.EnableWindow(false);
+  //baud_combo_.EnableWindow(false);
+  //ctrl_mode_combo_.EnableWindow(false);
+  //phidget_channel_combo_.EnableWindow(false);
 }
 
 
 void CADOL_motor_validationDlg::OnBnClickedDisconnect()
 {
   // TODO: Add your control notification handler code here
+  //stop dynamixel
+  goal_velocity_xm430_.i32_value = 0;
+  goal_pwm_xm430_.i16_value = 0;
+  goal_curr_xm430_.i16_value = 0;
+  print_enable_ = false;
+  Sleep(200);
+
+  //terminate dynamixel and phidget.
+  //before termination, terminating phidget should be first becuase terminating communication should be first.
+  terminatePhidget();
+  terminateCommDXL();
+
+  //enable connect windows.
+  //connect_btn_.EnableWindow(true);
+  //comport_combo_.EnableWindow(true);
+  //baud_combo_.EnableWindow(true);
+  //ctrl_mode_combo_.EnableWindow(true);
 }
 
 void CADOL_motor_validationDlg::OnBnClickedStart()
 {
 	// TODO: Add your control notification handler code here
+  arr_elapsed_time_.clear();
+  arr_voltage_output_.clear();
+  arr_goal_velocity_xm430_.clear();
+  arr_goal_pwm_xm430_.clear();
+  arr_goal_curr_xm430_.clear();
+  arr_present_temperature_xm430_.clear();
+  arr_present_current_xm430_.clear();
+  arr_present_velocity_xm430_.clear();
+  arr_present_position_xm430_.clear();
+  arr_present_temperature_MX28_.clear();
+  arr_present_velocity_MX28_.clear();
+  arr_present_position_MX28_.clear();
+  arr_arduino_curr_.clear();
+
+  time_stamps.clear();
+  time_stamps.push_back(0);
+  scailed_force_raw_.clear();
+
+  print_enable_ = true;
+  //chart_drawing_ = true;
+
+  //SetTimer(DRAWING_TIMER, 100, NULL);
 }
 
 
 void CADOL_motor_validationDlg::OnBnClickedStop()
 {
-	// TODO: Add your control notification handler code here
+  //chart_drawing_ = false;
+  print_enable_ = false;
+  //KillTimer(DRAWING_TIMER);
 }
 
 
 void CADOL_motor_validationDlg::OnBnClickedClear()
 {
-	// TODO: Add your control notification handler code here
+  system("cls");
+  bool curr_print = print_enable_;
+  //bool curr_drawing = chart_drawing_;
+  print_enable_ = false;
+  //chart_drawing_ = false;
+
+  arr_elapsed_time_.clear();
+  arr_voltage_output_.clear();
+  arr_goal_velocity_xm430_.clear();
+  arr_goal_pwm_xm430_.clear();
+  arr_goal_curr_xm430_.clear();
+  arr_present_temperature_xm430_.clear();
+  arr_present_current_xm430_.clear();
+  arr_present_velocity_xm430_.clear();
+  arr_present_position_xm430_.clear();
+  arr_present_temperature_MX28_.clear();
+  arr_present_velocity_MX28_.clear();
+  arr_present_position_MX28_.clear();
+  arr_arduino_curr_.clear();
+
+  time_stamps.clear();
+  time_stamps.push_back(0);
+  scailed_force_raw_.clear();
+
+  //drawChart(&force_chart_);
+
+  print_enable_ = curr_print;
+  //chart_drawing_ = curr_drawing;
 }
 
 
 void CADOL_motor_validationDlg::OnBnClickedSave()
 {
-	// TODO: Add your control notification handler code here
+  ctrl_flag_ = false;
+  print_enable_ = false;
+  Sleep(8);
+
+  std::ofstream log_file;
+  CTime cTime = CTime::GetCurrentTime(); // get current date and time
+  CString file_path;
+
+    file_path.Format(_T("log_val_%04d%02d%02d%02d%02d%02d.txt"),
+      cTime.GetYear(), cTime.GetMonth(),
+      cTime.GetDay(), cTime.GetHour(),
+      cTime.GetMinute(),
+      cTime.GetSecond());
+
+
+  //file_path.Format(_T("log_vel%d_pwm%d_cur%d_%04d%02d%02d%02d%02d%02d.txt"),
+  //  arr_goal_velocity_xm430_[0], arr_goal_pwm_xm430_[0], arr_goal_curr_xm430_[0],
+  //  cTime.GetYear(), cTime.GetMonth(),
+  //  cTime.GetDay(), cTime.GetHour(),
+  //  cTime.GetMinute(),
+  //  cTime.GetSecond());
+
+  log_file.open(file_path);
+
+  for (unsigned int arr_idx = 0; arr_idx < arr_elapsed_time_.size(); arr_idx++)
+  {
+
+    log_file << arr_elapsed_time_[arr_idx] << "\t"
+      << arr_voltage_output_[arr_idx] << "\t"
+      << arr_goal_velocity_xm430_[arr_idx] << "\t"
+      << arr_goal_pwm_xm430_[arr_idx] << "\t"
+      << arr_goal_curr_xm430_[arr_idx] << "\t"
+      << (unsigned int)arr_present_temperature_xm430_[arr_idx] << "\t"
+      << arr_present_current_xm430_[arr_idx] << "\t"
+      << arr_present_velocity_xm430_[arr_idx] << "\t"
+      << arr_present_position_xm430_[arr_idx] << "\t"
+      << (unsigned int)arr_present_temperature_MX28_[arr_idx] << "\t"
+      << arr_present_velocity_MX28_[arr_idx] << "\t"
+      << arr_present_position_MX28_[arr_idx] << "\t" 
+      << arr_arduino_curr_[arr_idx]
+      << std::endl;
+  }
+
+  log_file.close();
+
+  arr_elapsed_time_.clear();
+  arr_voltage_output_.clear();
+  arr_goal_velocity_xm430_.clear();
+  arr_goal_pwm_xm430_.clear();
+  arr_goal_curr_xm430_.clear();
+  arr_present_temperature_xm430_.clear();
+  arr_present_current_xm430_.clear();
+  arr_present_velocity_xm430_.clear();
+  arr_present_position_xm430_.clear();
+  arr_present_temperature_MX28_.clear();
+  arr_present_velocity_MX28_.clear();
+  arr_present_position_MX28_.clear();
+  arr_arduino_curr_.clear();
 }
 
 
@@ -764,11 +1003,9 @@ void CADOL_motor_validationDlg::OnBnClickedOk2()
 }
 
 
-
-
-
-
 void CADOL_motor_validationDlg::OnBnClickedCtrlStart()
 {
 	// TODO: Add your control notification handler code here
+  ctrl_flag_ = true;
+  //print_enable_ = true;
 }

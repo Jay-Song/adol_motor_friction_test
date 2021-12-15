@@ -163,6 +163,8 @@ public:
   std::vector<int32_t> arr_present_velocity_MX28_;
   std::vector<int32_t> arr_present_position_MX28_;
 
+  std::vector<float> arr_arduino_curr_;
+
 
   void terminateCommDXL(void);
 
@@ -187,5 +189,7 @@ public:
 
   std::vector<double> arr_voltage_output_;
   std::vector<double> arr_measured_force_N_;
+
+  bool ctrl_flag_;
 
 };

@@ -21,7 +21,7 @@ bool ArduinoCurrentReader::connect(std::string port_name, int baud_num)
 
   initializeTxPacket();
   serial_ = new jay::SerialCommWin(port_name);
-  if (serial_->openPort(1000000)) // 1 Mbps
+  if (serial_->openPort(baud_num)) // 1 Mbps
     return true;
   else
   {
