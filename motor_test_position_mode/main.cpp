@@ -65,7 +65,9 @@ int nrotation_ = 3;
 int max_voltage_measure_count = 250;
 double voltage_output[250];
 int voltage_measure_count = max_voltage_measure_count;
+double calib1 = 0, calib2 = 0;
 
+bool getCalibFactor(std::string file_name);
 void saveLog(void);
 
 
@@ -73,8 +75,9 @@ struct measured_data
 {
   int xm430_position_;
   int mx28_position_;
-  double load_cell_;
+  double load_cell_voltage_;
   double load_cell_stddev_;
+  double load_cell_g_;
   int position_interval_;
 };
 
@@ -137,6 +140,8 @@ int main(void)
   if (initializePhidget() == false)
     return 1;
 
+  if (getCalibFactor("calib.txt") == false)
+    return 1;
 
   // Initialize test para
   std::cout << "read current DXL values." << std::endl;
@@ -166,8 +171,9 @@ int main(void)
 
     _data.xm430_position_ = present_position_xm430_;
     _data.mx28_position_ = present_position_MX28_;
-    _data.load_cell_ = vol_avg;
+    _data.load_cell_voltage_ = vol_avg;
     _data.load_cell_stddev_ = vol_stddev;
+    _data.load_cell_g_ = vol_avg*calib1 + calib2;
     _data.position_interval_ = position_interval_;
 
     measured_data_arr.push_back(_data);
@@ -527,11 +533,14 @@ void saveLog(void)
 {
   std::ofstream log_file;
   log_file.open(currentDateTime());
+  log_file << std::fixed;
+  log_file.precision(10);
 
   for (unsigned int arr_idx = 0; arr_idx < measured_data_arr.size(); arr_idx++)
   {
     log_file << measured_data_arr[arr_idx].load_cell_stddev_ << "\t"
-      << measured_data_arr[arr_idx].load_cell_ << "\t"
+      << measured_data_arr[arr_idx].load_cell_voltage_ << "\t"
+      << measured_data_arr[arr_idx].load_cell_g_ << "\t"
       << measured_data_arr[arr_idx].position_interval_ << "\t"
       << 0 << "\t"
       << 0 << "\t"
@@ -545,4 +554,37 @@ void saveLog(void)
   }
 
   log_file.close();
+}
+
+bool getCalibFactor(std::string file_name)
+{
+  std::ifstream calib_file_handler;
+  calib_file_handler.open(file_name);
+
+  if (!calib_file_handler.is_open())
+  {
+    calib_file_handler.close();
+    return false;
+  }
+  else
+  {
+    std::cout << "succeeded in opening the calibration file" << std::endl;
+
+    std::string a;
+    double calib_factor = 0;
+    calib_file_handler >> a;
+    calib_file_handler >> calib_factor;
+    std::cout << "calib_factor1: " << calib_factor << std::endl;
+    calib1 = calib_factor;
+
+    calib_file_handler >> a;
+    calib_file_handler >> calib_factor;
+    std::cout << "calib_factor2: " << calib_factor << std::endl;
+    calib2 = calib_factor;
+
+    calib_file_handler.close();
+
+    return true;
+  }
+
 }

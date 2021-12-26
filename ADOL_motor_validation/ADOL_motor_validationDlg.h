@@ -183,12 +183,12 @@ public:
 
 
   double voltage_output_;
-  double measured_force_N_;
+  double measured_weight_g_;
   double calib_factor1_;
   double calib_factor2_;
 
   std::vector<double> arr_voltage_output_;
-  std::vector<double> arr_measured_force_N_;
+  std::vector<double> arr_measured_weight_g_;
 
   bool ctrl_flag_;
 

@@ -145,6 +145,7 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   test_ctrl_mode_combo_.AddString(L" 1: Velcoity");
   test_ctrl_mode_combo_.AddString(L" 3: Position");
   test_ctrl_mode_combo_.AddString(L"16: PWM");
+  //test_ctrl_mode_combo_.AddString(L"100: torque off");
 
   phidget_channel_combo_.AddString(L"CH 0");
   phidget_channel_combo_.AddString(L"CH 1");
@@ -199,7 +200,7 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   // initialize load cell out put variables 
   errorDetailLen_ = 100;
   voltage_output_ = 0;
-  measured_force_N_ = 0;
+  measured_weight_g_ = 0;
 
   // load cell calibration factor
   calib_factor1_ = DEFAULT_CALIB_FACTOR1;
@@ -256,7 +257,7 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
 
   ctrl_flag_ = false;
 
-  return TRUE;  // return TRUE  unless you set the focus to a control
+	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 void CADOL_motor_validationDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -533,7 +534,7 @@ bool CADOL_motor_validationDlg::turnTorqueOnDXL(bool on_off)
     printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
 
   if (on_off)
-    dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_test_, MX28::ADDR_TORQUE_ENABLE, 1, &dxl_error);
+    dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_test_, MX28::ADDR_TORQUE_ENABLE, 0, &dxl_error);
   else
     dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_test_, MX28::ADDR_TORQUE_ENABLE, 0, &dxl_error);
 
@@ -633,14 +634,14 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   test_dlg->readValuesFromDXLsRx();
 
   test_dlg->voltage_output_ = voltageRatio;
-  test_dlg->measured_force_N_ = voltageRatio*test_dlg->calib_factor1_ + test_dlg->calib_factor2_;
+  test_dlg->measured_weight_g_ = voltageRatio*test_dlg->calib_factor1_ + test_dlg->calib_factor2_;
 
 
   if (test_dlg->print_enable_ == true)
     printf("t: %lf vol*10^8: %lf f: %lf gc : %d cv: %d cp: %d ct: %d cc: %d mcv: %d mcp: %d mct: %d curr: %f\n",
       test_dlg->elapsed_time,
       voltageRatio*100000000.0,
-      test_dlg->measured_force_N_,
+      test_dlg->measured_weight_g_,
       test_dlg->goal_curr_xm430_.i16_value,
       test_dlg->present_velocity_xm430_,
       test_dlg->present_position_xm430_,
@@ -655,6 +656,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   {
     test_dlg->arr_elapsed_time_.push_back(test_dlg->elapsed_time);
     test_dlg->arr_voltage_output_.push_back(test_dlg->voltage_output_);
+    test_dlg->arr_measured_weight_g_.push_back(test_dlg->measured_weight_g_);
     test_dlg->arr_goal_velocity_xm430_.push_back(test_dlg->goal_velocity_xm430_.i32_value);
     test_dlg->arr_goal_pwm_xm430_.push_back(test_dlg->goal_pwm_xm430_.i16_value);
     test_dlg->arr_goal_curr_xm430_.push_back(test_dlg->goal_curr_xm430_.i16_value);
@@ -669,7 +671,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
 
     g_mutex.Lock();
     test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
-    test_dlg->scailed_force_raw_.push_back(test_dlg->measured_force_N_);
+    test_dlg->scailed_force_raw_.push_back(test_dlg->measured_weight_g_);
     g_mutex.Unlock();
   }
 }
@@ -864,6 +866,7 @@ void CADOL_motor_validationDlg::OnBnClickedStart()
 	// TODO: Add your control notification handler code here
   arr_elapsed_time_.clear();
   arr_voltage_output_.clear();
+  arr_measured_weight_g_.clear();
   arr_goal_velocity_xm430_.clear();
   arr_goal_pwm_xm430_.clear();
   arr_goal_curr_xm430_.clear();
@@ -905,6 +908,7 @@ void CADOL_motor_validationDlg::OnBnClickedClear()
 
   arr_elapsed_time_.clear();
   arr_voltage_output_.clear();
+  arr_measured_weight_g_.clear();
   arr_goal_velocity_xm430_.clear();
   arr_goal_pwm_xm430_.clear();
   arr_goal_curr_xm430_.clear();
@@ -953,12 +957,19 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
   //  cTime.GetSecond());
 
   log_file.open(file_path);
+  log_file << std::fixed;
+  log_file.precision(10);
+  log_file << "time" << "\t" << "voltage_output" << "\t" << "measured_load" << "\t"
+    << "des_driving_vel" << "\t" << "des_driving_pwm" << "\t" << "des_driving_curr" << "\t" << "des_driving_temp" << "\t"
+    << "mes_driving_curr" << "\t" << "mes_driving_vel" << "\t" << "mes_driving_pos" << "\t"
+    << "mes_test_temp" << "\t" << "mes_test_vel" << "\t" << "mes_test_pos" << "\t" << "mes_test_curr" << std::endl;
 
   for (unsigned int arr_idx = 0; arr_idx < arr_elapsed_time_.size(); arr_idx++)
   {
 
     log_file << arr_elapsed_time_[arr_idx] << "\t"
       << arr_voltage_output_[arr_idx] << "\t"
+      << arr_measured_weight_g_[arr_idx] << "\t"
       << arr_goal_velocity_xm430_[arr_idx] << "\t"
       << arr_goal_pwm_xm430_[arr_idx] << "\t"
       << arr_goal_curr_xm430_[arr_idx] << "\t"
@@ -977,6 +988,7 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
 
   arr_elapsed_time_.clear();
   arr_voltage_output_.clear();
+  arr_measured_weight_g_.clear();
   arr_goal_velocity_xm430_.clear();
   arr_goal_pwm_xm430_.clear();
   arr_goal_curr_xm430_.clear();
