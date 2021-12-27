@@ -32,7 +32,6 @@ bool ArduinoCurrentReader::connect(std::string port_name, int baud_num)
 
 bool ArduinoCurrentReader::txRxPacket()
 {
-  
   if (serial_->writePort(tx_packet_, 7) != 7) //total_packet_length = 7)
     return false;
 
@@ -42,8 +41,6 @@ bool ArduinoCurrentReader::txRxPacket()
   uint8_t checksum = 0;
   uint8_t header_idx = 0;
   uint8_t error = 0;
-
-   rx_length += serial_->readPort(&rx_packet_[rx_length], 9 - rx_length);
    
    while (true)
    {
@@ -51,7 +48,6 @@ bool ArduinoCurrentReader::txRxPacket()
 
      if (rx_length >= 9)
      {
-       
        //find header
        for (header_idx = 0; header_idx < 8; header_idx++)
        {
@@ -62,7 +58,7 @@ bool ArduinoCurrentReader::txRxPacket()
        if (header_idx != 0) //memmove : use for loop because it will be also used in arduino
        {
          for (uint8_t i = header_idx; i < rx_length; i++)
-           rx_packet_[i - header_idx] = rx_packet_[header_idx];
+           rx_packet_[i - header_idx] = rx_packet_[i];
          rx_length -= header_idx;
        }
 
