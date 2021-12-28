@@ -29,6 +29,27 @@ union value32
   float f32_value;
 };
 
+struct ResultData
+{
+  double  elapsed_time_sec_;
+  int32_t goal_velocity_xm430_;
+  int16_t goal_pwm_xm430_;
+  int16_t goal_curr_xm430_;
+
+  uint8_t present_temperature_xm430_;
+  int16_t present_current_xm430_;
+  int32_t present_velocity_xm430_;
+  int32_t present_position_xm430_;
+
+  uint8_t present_temperature_MX28_;
+  int32_t present_velocity_MX28_;
+  int32_t present_position_MX28_;
+
+  double  voltage_output_v_;
+  double  measured_weight_g_;
+  float   arduino_curr_;
+};
+
 // CADOL_motor_validationDlg dialog
 class CADOL_motor_validationDlg : public CDialogEx
 {
@@ -165,6 +186,9 @@ public:
   std::vector<int32_t> arr_present_velocity_MX28_;
   std::vector<int32_t> arr_present_position_MX28_;
 
+  std::vector<double> arr_voltage_output_;
+  std::vector<double> arr_measured_weight_g_;
+
   std::vector<float> arr_arduino_curr_;
 
 
@@ -189,8 +213,6 @@ public:
   double calib_factor1_;
   double calib_factor2_;
 
-  std::vector<double> arr_voltage_output_;
-  std::vector<double> arr_measured_weight_g_;
 
   bool ctrl_flag_;
 

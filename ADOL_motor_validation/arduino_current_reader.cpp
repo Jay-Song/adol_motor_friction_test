@@ -44,14 +44,14 @@ bool ArduinoCurrentReader::txRxPacket()
    
    while (true)
    {
-     rx_length += serial_->readPort(&rx_packet_[rx_length], 9 - rx_length);
-     
      if (serial_->isPacketTimeout())
      {
        error = 1;
        break;
      }
 
+     rx_length += serial_->readPort(&rx_packet_[rx_length], 9 - rx_length);
+     
      if (rx_length >= 9)
      {
        //find header
@@ -67,31 +67,31 @@ bool ArduinoCurrentReader::txRxPacket()
            rx_packet_[i - header_idx] = rx_packet_[i];
          rx_length -= header_idx;
        }
-       else if (header_idx == 9)
+       else if (header_idx == 8)
        {
          for (uint8_t i = 8; i < rx_length; i++)
            rx_packet_[i - 8] = rx_packet_[i];
          rx_length -= 8; // maybe the last packet is good.
          continue;
        }
+     }
 
-       if (rx_length >= 9)
+     if (rx_length >= 9)
+     {
+       checksum = 0;
+       for (uint16_t idx = 2; idx < 9 - 1; idx++)   // except header, checksum
+         checksum += rx_packet_[idx];
+       checksum = ~checksum; // checksum
+
+       if (checksum != rx_packet_[8])
        {
-         checksum = 0;
-         for (uint16_t idx = 2; idx < 9 - 1; idx++)   // except header, checksum
-           checksum += rx_packet_[idx];
-         checksum = ~checksum; // checksum
-
-         if (checksum != rx_packet_[8])
-         {
-           error = 2;
-           break;
-         }
-         else
-         {
-           error = 0;
-           break;
-         }
+         error = 2;
+         break;
+       }
+       else
+       {
+         error = 0;
+         break;
        }
      }
    }
