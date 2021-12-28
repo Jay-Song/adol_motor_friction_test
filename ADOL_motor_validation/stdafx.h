@@ -33,7 +33,7 @@
 
 #include <afxcontrolbars.h>     // MFC support for ribbons and control bars
 
-
+#include <mmsystem.h> // for multimedia timer
 
 #pragma comment(linker, "/ENTRY:wWinMainCRTStartup /subsystem:console")
 

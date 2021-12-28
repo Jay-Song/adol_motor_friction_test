@@ -138,6 +138,8 @@ public:
 
   //for Arduino
   ArduinoCurrentReader arduino_;
+  UINT m_nTimerID; // for timer
+
 
   // output from dxl
   uint8_t present_temperature_xm430_;
@@ -193,3 +195,4 @@ public:
   bool ctrl_flag_;
 
 };
+

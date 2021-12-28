@@ -19,6 +19,7 @@
 #define DEFAULT_CALIB_FACTOR2 (-1838.691939)
 
 CMutex g_mutex(FALSE, NULL);
+void CALLBACK procArduinoCurrent(UINT m_nTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2);
 
 // CAboutDlg dialog used for App About
 
@@ -628,7 +629,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   test_dlg->changeGoalValues();
   test_dlg->readValuesFromDXLsTx();
 
-  test_dlg->arduino_.txRxPacket();
+  //test_dlg->arduino_.txRxPacket(); // excute this in the multimedia timer
   float curr = test_dlg->arduino_.getCurrent();
 
   test_dlg->readValuesFromDXLsRx();
@@ -831,6 +832,25 @@ void CADOL_motor_validationDlg::OnBnClickedConnect()
   }
 
   loadData();
+
+  // for timer
+  // gettting timer resolution
+  TIMECAPS timecaps;
+  timeGetDevCaps(&timecaps, sizeof(TIMECAPS));
+
+  std::cout << " timer resoultion : " << timecaps.wPeriodMin << " " << timecaps.wPeriodMax << std::endl;
+
+  m_nTimerID = timeSetEvent(4, timecaps.wPeriodMin, procArduinoCurrent, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+  if (m_nTimerID == 0)
+  {
+    AfxMessageBox(L"Failed to connect to Arduino");
+    return;
+  }
+  else
+  {
+    std::cout << "Succeeded in creating timer for arduino" << std::endl;
+  }
+
   //connect_btn_.EnableWindow(false);
   //comport_combo_.EnableWindow(false);
   //baud_combo_.EnableWindow(false);
@@ -1020,4 +1040,11 @@ void CADOL_motor_validationDlg::OnBnClickedCtrlStart()
 	// TODO: Add your control notification handler code here
   ctrl_flag_ = true;
   //print_enable_ = true;
+}
+
+
+void CALLBACK procArduinoCurrent(UINT m_nTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
+{
+  CADOL_motor_validationDlg* dlg = (CADOL_motor_validationDlg*)dwUser;
+  dlg->arduino_.txRxPacket();
 }
