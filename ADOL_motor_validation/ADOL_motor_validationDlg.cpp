@@ -839,8 +839,11 @@ void CADOL_motor_validationDlg::OnBnClickedConnect()
   timeGetDevCaps(&timecaps, sizeof(TIMECAPS));
 
   std::cout << " timer resoultion : " << timecaps.wPeriodMin << " " << timecaps.wPeriodMax << std::endl;
-
-  m_nTimerID = timeSetEvent(4, timecaps.wPeriodMin, procArduinoCurrent, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+  arduino_.txRxPacket();
+  Sleep(1);
+  arduino_.txRxPacket();
+  Sleep(1);
+  m_nTimerID = timeSetEvent(8, timecaps.wPeriodMin, procArduinoCurrent, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
   if (m_nTimerID == 0)
   {
     AfxMessageBox(L"Failed to connect to Arduino");

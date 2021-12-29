@@ -178,7 +178,9 @@ int main(void)
 
     measured_data_arr.push_back(_data);
 
-    std::cout << "MX28pos: " << present_position_MX28_ << " vol_avg: " << vol_avg << " vol_stddev: " << vol_stddev << " position_interval_: " << position_interval_ << std::endl;
+    std::cout << "MX28pos: " << present_position_MX28_ 
+      << " vol_avg: " << vol_avg << " weight: "  << _data.load_cell_g_ << " vol_stddev: " << vol_stddev
+      << " interval_: " << position_interval_ << std::endl;
 
     //if (goal_position_xm430_ > 4095)
     //{
@@ -564,6 +566,7 @@ bool getCalibFactor(std::string file_name)
   if (!calib_file_handler.is_open())
   {
     calib_file_handler.close();
+    std::cout << "Failed to open the calibration file" << std::endl;
     return false;
   }
   else
