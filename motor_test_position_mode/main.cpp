@@ -523,7 +523,10 @@ const std::string currentDateTime() {
   //  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss ?????? ¨ö¨¬¨¡¢ç¢¬?
 
   std::stringstream ss;
-  ss << tstruct.tm_year + 1900 << tstruct.tm_mon
+  ss << tstruct.tm_year + 1900;
+  ss.width(2);
+  ss.fill('0');
+  ss << tstruct.tm_mon
     << tstruct.tm_mday
     << tstruct.tm_hour
     << tstruct.tm_min
