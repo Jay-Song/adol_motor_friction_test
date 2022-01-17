@@ -72,6 +72,7 @@ bool ArduinoCurrentReader::txRxPacket()
          //for (uint8_t i = 8; i < rx_length; i++)
          //  rx_packet_[i - 8] = rx_packet_[i];
          //rx_length -= 8; // maybe the last packet is good.
+         header_idx = 0;
          continue;
        }
      }
@@ -113,6 +114,7 @@ bool ArduinoCurrentReader::txRxPacket()
    }
    else
    {
+     std::cout << "error" << std::endl;
      return false;
    }
 }
