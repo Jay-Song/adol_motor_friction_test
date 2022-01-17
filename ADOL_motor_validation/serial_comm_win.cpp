@@ -204,7 +204,7 @@ int SerialCommWin::writePort(uint8_t *packet, int length)
 void SerialCommWin::setPacketTimeout(uint16_t packet_length)
 {
   packet_start_time_msec_ = getCurrentTime();
-  packet_timeout_msec_ = (tx_time_per_byte_msec_ * (double)packet_length) + (LATENCY_TIME_MSEC * 2.0) + 5.0;
+  packet_timeout_msec_ = (tx_time_per_byte_msec_ * (double)packet_length) + (LATENCY_TIME_MSEC * 2.0) + 6.0;
 }
 
 //void SerialCommWin::setPacketTimeout(double wait_time_msec)

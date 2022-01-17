@@ -61,7 +61,7 @@ bool ArduinoCurrentReader::txRxPacket()
            break;
        }
 
-       if ((header_idx != 0) && (header_idx != 9)) //memmove : use for loop because it will be also used in arduino
+       if (header_idx != 0) //memmove : use for loop because it will be also used in arduino
        {
          for (uint8_t i = header_idx; i < rx_length; i++)
            rx_packet_[i - header_idx] = rx_packet_[i];
@@ -69,9 +69,9 @@ bool ArduinoCurrentReader::txRxPacket()
        }
        else if (header_idx == 8)
        {
-         for (uint8_t i = 8; i < rx_length; i++)
-           rx_packet_[i - 8] = rx_packet_[i];
-         rx_length -= 8; // maybe the last packet is good.
+         //for (uint8_t i = 8; i < rx_length; i++)
+         //  rx_packet_[i - 8] = rx_packet_[i];
+         //rx_length -= 8; // maybe the last packet is good.
          continue;
        }
      }

@@ -535,7 +535,7 @@ bool CADOL_motor_validationDlg::turnTorqueOnDXL(bool on_off)
     printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
 
   if (on_off)
-    dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_test_, MX28::ADDR_TORQUE_ENABLE, 0, &dxl_error);
+    dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_test_, MX28::ADDR_TORQUE_ENABLE, 1, &dxl_error);
   else
     dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_test_, MX28::ADDR_TORQUE_ENABLE, 0, &dxl_error);
 
@@ -839,8 +839,11 @@ void CADOL_motor_validationDlg::OnBnClickedConnect()
   timeGetDevCaps(&timecaps, sizeof(TIMECAPS));
 
   std::cout << " timer resoultion : " << timecaps.wPeriodMin << " " << timecaps.wPeriodMax << std::endl;
-
-  m_nTimerID = timeSetEvent(4, timecaps.wPeriodMin, procArduinoCurrent, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+  arduino_.txRxPacket();
+  Sleep(1);
+  arduino_.txRxPacket();
+  Sleep(1);
+  m_nTimerID = timeSetEvent(8, timecaps.wPeriodMin, procArduinoCurrent, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
   if (m_nTimerID == 0)
   {
     AfxMessageBox(L"Failed to connect to Arduino");
