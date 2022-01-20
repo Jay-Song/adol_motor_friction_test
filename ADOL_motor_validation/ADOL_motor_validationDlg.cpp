@@ -84,10 +84,11 @@ BEGIN_MESSAGE_MAP(CADOL_motor_validationDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_CLEAR, &CADOL_motor_validationDlg::OnBnClickedClear)
 	ON_BN_CLICKED(IDC_SAVE, &CADOL_motor_validationDlg::OnBnClickedSave)
 	ON_BN_CLICKED(IDC_SET_CALIB, &CADOL_motor_validationDlg::OnBnClickedSetCalib)
-	ON_BN_CLICKED(IDOK2, &CADOL_motor_validationDlg::OnBnClickedOk2)
 	ON_BN_CLICKED(IDC_CONNECT, &CADOL_motor_validationDlg::OnBnClickedConnect)
 	ON_BN_CLICKED(IDC_DISCONNECT, &CADOL_motor_validationDlg::OnBnClickedDisconnect)
 	ON_BN_CLICKED(IDC_CTRL_START, &CADOL_motor_validationDlg::OnBnClickedCtrlStart)
+	ON_BN_CLICKED(IDC_CTRL_REBOOT, &CADOL_motor_validationDlg::OnBnClickedCtrlReboot)
+  ON_BN_CLICKED(ID_EXIT, &CADOL_motor_validationDlg::OnBnClickedExit)
 END_MESSAGE_MAP()
 
 
@@ -178,14 +179,14 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   goal_velocity_mx28_.i32_value = 0;
   goal_pwm_mx28_.i16_value = 0;
 
-  present_temperature_xm430_ = 0;
-  present_current_xm430_ = 0;
-  present_velocity_xm430_ = 0;
-  present_position_xm430_ = 0;
+  //present_temperature_xm430_ = 0;
+  //present_current_xm430_ = 0;
+  //present_velocity_xm430_ = 0;
+  //present_position_xm430_ = 0;
 
-  present_temperature_MX28_ = 0;
-  present_velocity_MX28_ = 0;
-  present_position_MX28_ = 0;
+  //present_temperature_MX28_ = 0;
+  //present_velocity_MX28_ = 0;
+  //present_position_MX28_ = 0;
 
   //For measuring the time
   QueryPerformanceFrequency(&Frequency);
@@ -200,8 +201,6 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
 
   // initialize load cell out put variables 
   errorDetailLen_ = 100;
-  voltage_output_ = 0;
-  measured_weight_g_ = 0;
 
   // load cell calibration factor
   calib_factor1_ = DEFAULT_CALIB_FACTOR1;
@@ -252,7 +251,6 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   //m_extBgColor = getDefaultBgColor();
   //drawChart(&force_chart_);
   //chart_drawing_ = false;
-
 
   data_idx_ = 0;
 
@@ -556,8 +554,52 @@ bool CADOL_motor_validationDlg::turnTorqueOnDXL(bool on_off)
   return true;
 }
 
+void CADOL_motor_validationDlg::loadData(void)
+{
+  std::ifstream file;
+  file.open("traj.txt");
+
+  goal_vel_xm430_list_.clear();
+  goal_pwm_mx28_list_.clear();
+
+  std::string srt;
+
+  while (!file.eof())
+  {
+    int32_t a; int16_t b;
+    std::getline(file, srt);
+    std::stringstream ss(srt);
+
+    file >> a;
+    file >> b;
+    goal_vel_xm430_list_.push_back(a);
+    goal_pwm_mx28_list_.push_back(b);
+  }
+  file.close();
+
+  data_idx_ = 0;
+}
+
+
+void CADOL_motor_validationDlg::updateGoalValues(void)
+{
+  if (ctrl_flag_ == false)
+    return;
+
+  data_idx_++;
+
+  if (data_idx_ >= goal_vel_xm430_list_.size())
+    data_idx_ = 0;
+
+  goal_velocity_xm430_.i32_value = goal_vel_xm430_list_[data_idx_];
+  goal_pwm_mx28_.i16_value = goal_pwm_mx28_list_[data_idx_];
+}
+
 void CADOL_motor_validationDlg::changeGoalValues(void)
 {
+  if (ctrl_flag_ == false)
+    return;
+
   int dxl_result = 0;
   
   if (test_dxl_ctrl_mode_ == 1)
@@ -583,6 +625,9 @@ void CADOL_motor_validationDlg::changeGoalValues(void)
 
 bool CADOL_motor_validationDlg::readValuesFromDXLsTx(void)
 {
+  if (dxl_comm_flag_ == true)
+    return true;
+
   int dxl_result = dxl_bulk_read_->txPacket();
   if (dxl_result != COMM_SUCCESS)
   {
@@ -594,6 +639,9 @@ bool CADOL_motor_validationDlg::readValuesFromDXLsTx(void)
 
 bool CADOL_motor_validationDlg::readValuesFromDXLsRx(void)
 {
+  if (dxl_comm_flag_ == true)
+    return true;
+
   int dxl_result = dxl_bulk_read_->rxPacket();
   if (dxl_result != COMM_SUCCESS)
   {
@@ -601,14 +649,14 @@ bool CADOL_motor_validationDlg::readValuesFromDXLsRx(void)
     return false;
   }
 
-  present_current_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 0, 2);
-  present_velocity_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 2, 4);
-  present_position_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 6, 4);
-  present_temperature_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 10, 1);
+  curr_result_.present_current_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 0, 2);
+  curr_result_.present_velocity_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 2, 4);
+  curr_result_.present_position_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 6, 4);
+  curr_result_.present_temperature_xm430_ = dxl_bulk_read_->getData(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1 + 10, 1);
 
-  present_velocity_MX28_ = dxl_bulk_read_->getData(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1 + 0, 4);
-  present_position_MX28_ = dxl_bulk_read_->getData(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1 + 4, 4);
-  present_temperature_MX28_ = dxl_bulk_read_->getData(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1 + 8, 1);
+  curr_result_.present_velocity_mx28_ = dxl_bulk_read_->getData(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1 + 0, 4);
+  curr_result_.present_position_mx28_ = dxl_bulk_read_->getData(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1 + 4, 4);
+  curr_result_.present_temperature_mx28_ = dxl_bulk_read_->getData(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1 + 8, 1);
 
   return true;
 }
@@ -630,97 +678,46 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   test_dlg->readValuesFromDXLsTx();
 
   //test_dlg->arduino_.txRxPacket(); // excute this in the multimedia timer
-  float curr = test_dlg->arduino_.getCurrent();
+  float mx28_curr_mA = test_dlg->arduino_.getCurrent();
 
   test_dlg->readValuesFromDXLsRx();
 
-  test_dlg->voltage_output_ = voltageRatio;
-  test_dlg->measured_weight_g_ = voltageRatio*test_dlg->calib_factor1_ + test_dlg->calib_factor2_;
+
+  test_dlg->curr_result_.elapsed_time_sec_ = test_dlg->elapsed_time;
+  test_dlg->curr_result_.voltage_output_v_ = voltageRatio;
+  test_dlg->curr_result_.measured_weight_g_ = voltageRatio*test_dlg->calib_factor1_ + test_dlg->calib_factor2_;
+
+  test_dlg->curr_result_.goal_velocity_xm430_ = test_dlg->goal_velocity_xm430_.i32_value;
+  test_dlg->curr_result_.goal_pwm_xm430_ = test_dlg->goal_pwm_xm430_.i16_value;
+  test_dlg->curr_result_.goal_curr_xm430_ = test_dlg->goal_curr_xm430_.i16_value;
+
+  test_dlg->curr_result_.arduino_curr_mx28_mA_ = mx28_curr_mA;
 
 
   if (test_dlg->print_enable_ == true)
     printf("t: %lf vol*10^8: %lf f: %lf gc : %d cv: %d cp: %d ct: %d cc: %d mcv: %d mcp: %d mct: %d curr: %f\n",
       test_dlg->elapsed_time,
       voltageRatio*100000000.0,
-      test_dlg->measured_weight_g_,
+      test_dlg->curr_result_.measured_weight_g_,
       test_dlg->goal_curr_xm430_.i16_value,
-      test_dlg->present_velocity_xm430_,
-      test_dlg->present_position_xm430_,
-      test_dlg->present_temperature_xm430_,
-      test_dlg->present_current_xm430_,
-      test_dlg->present_velocity_MX28_,
-      test_dlg->present_position_MX28_,
-      test_dlg->present_temperature_MX28_,
-      curr);
+      test_dlg->curr_result_.present_velocity_xm430_,
+      test_dlg->curr_result_.present_position_xm430_,
+      test_dlg->curr_result_.present_temperature_xm430_,
+      test_dlg->curr_result_.present_current_xm430_,
+      test_dlg->curr_result_.present_velocity_mx28_,
+      test_dlg->curr_result_.present_position_mx28_,
+      test_dlg->curr_result_.present_temperature_mx28_,
+      mx28_curr_mA);
 
   if (test_dlg->print_enable_ == true)
   {
-    test_dlg->arr_elapsed_time_.push_back(test_dlg->elapsed_time);
-    test_dlg->arr_voltage_output_.push_back(test_dlg->voltage_output_);
-    test_dlg->arr_measured_weight_g_.push_back(test_dlg->measured_weight_g_);
-    test_dlg->arr_goal_velocity_xm430_.push_back(test_dlg->goal_velocity_xm430_.i32_value);
-    test_dlg->arr_goal_pwm_xm430_.push_back(test_dlg->goal_pwm_xm430_.i16_value);
-    test_dlg->arr_goal_curr_xm430_.push_back(test_dlg->goal_curr_xm430_.i16_value);
-    test_dlg->arr_present_temperature_xm430_.push_back(test_dlg->present_temperature_xm430_);
-    test_dlg->arr_present_current_xm430_.push_back(test_dlg->present_current_xm430_);
-    test_dlg->arr_present_velocity_xm430_.push_back(test_dlg->present_velocity_xm430_);
-    test_dlg->arr_present_position_xm430_.push_back(test_dlg->present_position_xm430_);
-    test_dlg->arr_present_temperature_MX28_.push_back(test_dlg->present_temperature_MX28_);
-    test_dlg->arr_present_velocity_MX28_.push_back(test_dlg->present_velocity_MX28_);
-    test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
-    test_dlg->arr_arduino_curr_.push_back(curr);
-
     g_mutex.Lock();
-    test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
-    test_dlg->scailed_force_raw_.push_back(test_dlg->measured_weight_g_);
+    //test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
+    test_dlg->time_stamps.push_back(test_dlg->elapsed_time);
+    test_dlg->scailed_force_raw_.push_back(test_dlg->curr_result_.measured_weight_g_);
     g_mutex.Unlock();
   }
 }
-
-void CADOL_motor_validationDlg::updateGoalValues(void)
-{
-  if (ctrl_flag_ == false)
-    return;
-
-  data_idx_++;
-
-  if (data_idx_ >= goal_vel_xm430_list_.size())
-    data_idx_ = 0;
-
-  goal_velocity_xm430_.i32_value = goal_vel_xm430_list_[data_idx_];
-  goal_pwm_mx28_.i16_value = goal_pwm_mx28_list_[data_idx_];
-
-}
-
-void CADOL_motor_validationDlg::loadData(void)
-{
-  std::ifstream file;
-  file.open("traj.txt");
-
-  goal_vel_xm430_list_.clear();
-  goal_pwm_mx28_list_.clear();
-
-  std::string srt;
-
-  while (!file.eof())
-  {
-    int32_t a; int16_t b;
-    std::getline(file, srt);
-    std::stringstream ss(srt);
-
-    
-    file >> a;
-    file >> b;
-    goal_vel_xm430_list_.push_back(a);
-    goal_pwm_mx28_list_.push_back(b);
-  }
-  file.close();
-  
-  data_idx_ = 0;
-}
-
-
-
 
 void __stdcall onVoltageRatioInput0_Attach(PhidgetHandle ch, void * ctx) {
   printf("Attach!\n");
@@ -734,6 +731,7 @@ void __stdcall onVoltageRatioInput0_Error(PhidgetHandle ch, void * ctx, Phidget_
   printf("Description: %s\n", description);
   printf("----------\n");
 }
+
 
 bool CADOL_motor_validationDlg::initializePhidget(void)
 {
@@ -783,7 +781,6 @@ bool CADOL_motor_validationDlg::terminatePhidget(void)
   return true;
 }
 
-
 void CADOL_motor_validationDlg::OnBnClickedConnect()
 {
   // TODO: Add your control notification handler code here
@@ -831,8 +828,6 @@ void CADOL_motor_validationDlg::OnBnClickedConnect()
     return;
   }
 
-  loadData();
-
   // for timer
   // gettting timer resolution
   TIMECAPS timecaps;
@@ -861,7 +856,6 @@ void CADOL_motor_validationDlg::OnBnClickedConnect()
   //phidget_channel_combo_.EnableWindow(false);
 }
 
-
 void CADOL_motor_validationDlg::OnBnClickedDisconnect()
 {
   // TODO: Add your control notification handler code here
@@ -887,23 +881,10 @@ void CADOL_motor_validationDlg::OnBnClickedDisconnect()
 void CADOL_motor_validationDlg::OnBnClickedStart()
 {
 	// TODO: Add your control notification handler code here
-  arr_elapsed_time_.clear();
-  arr_voltage_output_.clear();
-  arr_measured_weight_g_.clear();
-  arr_goal_velocity_xm430_.clear();
-  arr_goal_pwm_xm430_.clear();
-  arr_goal_curr_xm430_.clear();
-  arr_present_temperature_xm430_.clear();
-  arr_present_current_xm430_.clear();
-  arr_present_velocity_xm430_.clear();
-  arr_present_position_xm430_.clear();
-  arr_present_temperature_MX28_.clear();
-  arr_present_velocity_MX28_.clear();
-  arr_present_position_MX28_.clear();
-  arr_arduino_curr_.clear();
+  arr_result_data_.clear();
 
   time_stamps.clear();
-  time_stamps.push_back(0);
+  //time_stamps.push_back(0);
   scailed_force_raw_.clear();
 
   print_enable_ = true;
@@ -912,14 +893,12 @@ void CADOL_motor_validationDlg::OnBnClickedStart()
   //SetTimer(DRAWING_TIMER, 100, NULL);
 }
 
-
 void CADOL_motor_validationDlg::OnBnClickedStop()
 {
   //chart_drawing_ = false;
   print_enable_ = false;
   //KillTimer(DRAWING_TIMER);
 }
-
 
 void CADOL_motor_validationDlg::OnBnClickedClear()
 {
@@ -929,23 +908,10 @@ void CADOL_motor_validationDlg::OnBnClickedClear()
   print_enable_ = false;
   //chart_drawing_ = false;
 
-  arr_elapsed_time_.clear();
-  arr_voltage_output_.clear();
-  arr_measured_weight_g_.clear();
-  arr_goal_velocity_xm430_.clear();
-  arr_goal_pwm_xm430_.clear();
-  arr_goal_curr_xm430_.clear();
-  arr_present_temperature_xm430_.clear();
-  arr_present_current_xm430_.clear();
-  arr_present_velocity_xm430_.clear();
-  arr_present_position_xm430_.clear();
-  arr_present_temperature_MX28_.clear();
-  arr_present_velocity_MX28_.clear();
-  arr_present_position_MX28_.clear();
-  arr_arduino_curr_.clear();
+  arr_result_data_.clear();
 
   time_stamps.clear();
-  time_stamps.push_back(0);
+  //time_stamps.push_back(0);
   scailed_force_raw_.clear();
 
   //drawChart(&force_chart_);
@@ -953,7 +919,6 @@ void CADOL_motor_validationDlg::OnBnClickedClear()
   print_enable_ = curr_print;
   //chart_drawing_ = curr_drawing;
 }
-
 
 void CADOL_motor_validationDlg::OnBnClickedSave()
 {
@@ -971,7 +936,6 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
       cTime.GetMinute(),
       cTime.GetSecond());
 
-
   //file_path.Format(_T("log_vel%d_pwm%d_cur%d_%04d%02d%02d%02d%02d%02d.txt"),
   //  arr_goal_velocity_xm430_[0], arr_goal_pwm_xm430_[0], arr_goal_curr_xm430_[0],
   //  cTime.GetYear(), cTime.GetMonth(),
@@ -985,69 +949,105 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
   log_file << "time" << "\t" << "voltage_output" << "\t" << "measured_load" << "\t"
     << "des_driving_vel" << "\t" << "des_driving_pwm" << "\t" << "des_driving_curr" << "\t" << "des_driving_temp" << "\t"
     << "mes_driving_curr" << "\t" << "mes_driving_vel" << "\t" << "mes_driving_pos" << "\t"
-    << "mes_test_temp" << "\t" << "mes_test_vel" << "\t" << "mes_test_pos" << "\t" << "mes_test_curr" << std::endl;
+    << "mes_test_temp" << "\t" << "mes_test_vel" << "\t" << "mes_test_pos" << "\t" << "mes_test_curr" << "\t" << "des_test_PWM" <<  std::endl;
 
-  for (unsigned int arr_idx = 0; arr_idx < arr_elapsed_time_.size(); arr_idx++)
+  for (unsigned int arr_idx = 0; arr_idx < arr_result_data_.size(); arr_idx++)
   {
-
-    log_file << arr_elapsed_time_[arr_idx] << "\t"
-      << arr_voltage_output_[arr_idx] << "\t"
-      << arr_measured_weight_g_[arr_idx] << "\t"
-      << arr_goal_velocity_xm430_[arr_idx] << "\t"
-      << arr_goal_pwm_xm430_[arr_idx] << "\t"
-      << arr_goal_curr_xm430_[arr_idx] << "\t"
-      << (unsigned int)arr_present_temperature_xm430_[arr_idx] << "\t"
-      << arr_present_current_xm430_[arr_idx] << "\t"
-      << arr_present_velocity_xm430_[arr_idx] << "\t"
-      << arr_present_position_xm430_[arr_idx] << "\t"
-      << (unsigned int)arr_present_temperature_MX28_[arr_idx] << "\t"
-      << arr_present_velocity_MX28_[arr_idx] << "\t"
-      << arr_present_position_MX28_[arr_idx] << "\t" 
-      << arr_arduino_curr_[arr_idx]
+    log_file << arr_result_data_[arr_idx].elapsed_time_sec_      << "\t"
+      << arr_result_data_[arr_idx].voltage_output_v_             << "\t"
+      << arr_result_data_[arr_idx].measured_weight_g_            << "\t"
+      << arr_result_data_[arr_idx].goal_velocity_xm430_          << "\t"
+      << arr_result_data_[arr_idx].goal_pwm_xm430_               << "\t"
+      << arr_result_data_[arr_idx].goal_curr_xm430_              << "\t"
+      << arr_result_data_[arr_idx].present_temperature_xm430_    << "\t"
+      << arr_result_data_[arr_idx].present_current_xm430_        << "\t"
+      << arr_result_data_[arr_idx].present_velocity_xm430_       << "\t"
+      << arr_result_data_[arr_idx].present_position_xm430_       << "\t"
+      << arr_result_data_[arr_idx].present_temperature_mx28_     << "\t"
+      << arr_result_data_[arr_idx].present_velocity_mx28_        << "\t"
+      << arr_result_data_[arr_idx].present_position_mx28_        << "\t"
+      << arr_result_data_[arr_idx].arduino_curr_mx28_mA_         << "\t"
+      << arr_result_data_[arr_idx].goal_pwm_mx28_                << "\t"
       << std::endl;
   }
 
   log_file.close();
 
-  arr_elapsed_time_.clear();
-  arr_voltage_output_.clear();
-  arr_measured_weight_g_.clear();
-  arr_goal_velocity_xm430_.clear();
-  arr_goal_pwm_xm430_.clear();
-  arr_goal_curr_xm430_.clear();
-  arr_present_temperature_xm430_.clear();
-  arr_present_current_xm430_.clear();
-  arr_present_velocity_xm430_.clear();
-  arr_present_position_xm430_.clear();
-  arr_present_temperature_MX28_.clear();
-  arr_present_velocity_MX28_.clear();
-  arr_present_position_MX28_.clear();
-  arr_arduino_curr_.clear();
+  arr_result_data_.clear();
 }
-
 
 void CADOL_motor_validationDlg::OnBnClickedSetCalib()
 {
 	// TODO: Add your control notification handler code here
 }
 
-
-void CADOL_motor_validationDlg::OnBnClickedOk2()
-{
-	// TODO: Add your control notification handler code here
-}
-
-
 void CADOL_motor_validationDlg::OnBnClickedCtrlStart()
 {
-	// TODO: Add your control notification handler code here
+  loadData();
   ctrl_flag_ = true;
-  //print_enable_ = true;
 }
-
 
 void CALLBACK procArduinoCurrent(UINT m_nTimerID, UINT uMsg, DWORD_PTR dwUser, DWORD_PTR dw1, DWORD_PTR dw2)
 {
   CADOL_motor_validationDlg* dlg = (CADOL_motor_validationDlg*)dwUser;
   dlg->arduino_.txRxPacket();
+}
+
+void CADOL_motor_validationDlg::OnBnClickedCtrlReboot()
+{
+  ctrl_flag_ = false;
+  
+  print_enable_ = false;
+  OnBnClickedClear();
+
+  dxl_comm_flag_ = true;
+
+  Sleep(8); // wait 8 ms which is one control cycle
+  
+  if (turnTorqueOnDXL(false) == true) // turn of the torque
+    std::cout << "Succeeded in turning torque off" << std::endl; 
+
+  uint8_t dxl_result = 0 , dxl_error = 0;
+  dxl_result = dxl_packet_->reboot(dxl_port_, dxl_id_driving_, &dxl_error);
+  if (dxl_result == COMM_SUCCESS)
+    std::cout << "Succeeded in rebooting the driving motor" << std::endl; // turn of the torque
+  else
+  {
+    std::cout << "Failed to reboot the driving motor" << std::endl;
+    return;
+  }
+
+  if (dxl_error != 0)
+    printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
+
+
+
+  dxl_packet_->reboot(dxl_port_, dxl_id_test_, &dxl_error);
+  if (dxl_result == COMM_SUCCESS)
+    std::cout << "Succeeded in rebooting the test motor" << std::endl; // turn of the torque
+  else
+  {
+    std::cout << "Failed to reboot the test motor" << std::endl;
+    return;
+  }
+
+  if (dxl_error != 0)
+    printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
+
+  dxl_comm_flag_ = false;
+}
+
+void CADOL_motor_validationDlg::OnBnClickedExit()
+{
+  OnBnClickedCtrlReboot();
+
+  if (dxl_port_ != 0)
+  {
+    terminatePhidget();
+    terminateCommDXL();
+  }
+
+  delete dxl_port_;
+
+  CDialogEx::OnOK();
 }

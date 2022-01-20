@@ -664,7 +664,8 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
     test_dlg->arr_present_position_MX28_.push_back(test_dlg->present_position_MX28_);
 
     g_mutex.Lock();
-    test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
+    //test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
+    test_dlg->time_stamps.push_back(test_dlg->elapsed_time);
     test_dlg->scailed_force_raw_.push_back(test_dlg->measured_force_N_);
     g_mutex.Unlock();
   }

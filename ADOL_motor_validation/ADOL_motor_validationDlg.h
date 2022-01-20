@@ -41,14 +41,18 @@ struct ResultData
   int32_t present_velocity_xm430_;
   int32_t present_position_xm430_;
 
-  uint8_t present_temperature_MX28_;
-  int32_t present_velocity_MX28_;
-  int32_t present_position_MX28_;
+  int32_t goal_velocity_mx28_;
+  int16_t goal_pwm_mx28_;
+
+  uint8_t present_temperature_mx28_;
+  int32_t present_velocity_mx28_;
+  int32_t present_position_mx28_;
 
   double  voltage_output_v_;
   double  measured_weight_g_;
-  float   arduino_curr_;
+  float   arduino_curr_mx28_mA_;
 };
+
 
 // CADOL_motor_validationDlg dialog
 class CADOL_motor_validationDlg : public CDialogEx
@@ -83,11 +87,10 @@ public:
   afx_msg void OnBnClickedClear();
   afx_msg void OnBnClickedSave();
   afx_msg void OnBnClickedSetCalib();
-  afx_msg void OnBnClickedOk2();
   afx_msg void OnBnClickedConnect();
   afx_msg void OnBnClickedDisconnect();
   afx_msg void OnBnClickedCtrlStart();
-
+  afx_msg void OnBnClickedCtrlReboot();
 
   CComboBox comport_combo_;
   CComboBox baud_combo_;
@@ -163,34 +166,8 @@ public:
 
 
   // output from dxl
-  uint8_t present_temperature_xm430_;
-  int16_t present_current_xm430_;
-  int32_t present_velocity_xm430_;
-  int32_t present_position_xm430_;
-
-  uint8_t present_temperature_MX28_;
-  int32_t present_velocity_MX28_;
-  int32_t present_position_MX28_;
-
-  std::vector<double> arr_elapsed_time_;
-  std::vector<int32_t> arr_goal_velocity_xm430_;
-  std::vector<int16_t> arr_goal_pwm_xm430_;
-  std::vector<int16_t> arr_goal_curr_xm430_;
-
-  std::vector<uint8_t> arr_present_temperature_xm430_;
-  std::vector<int16_t> arr_present_current_xm430_;
-  std::vector<int32_t> arr_present_velocity_xm430_;
-  std::vector<int32_t> arr_present_position_xm430_;
-
-  std::vector<uint8_t> arr_present_temperature_MX28_;
-  std::vector<int32_t> arr_present_velocity_MX28_;
-  std::vector<int32_t> arr_present_position_MX28_;
-
-  std::vector<double> arr_voltage_output_;
-  std::vector<double> arr_measured_weight_g_;
-
-  std::vector<float> arr_arduino_curr_;
-
+  ResultData curr_result_;
+  std::vector<ResultData> arr_result_data_;
 
   void terminateCommDXL(void);
 
@@ -207,14 +184,12 @@ public:
   bool initializePhidget(void);
   bool terminatePhidget(void);
 
-
-  double voltage_output_;
-  double measured_weight_g_;
   double calib_factor1_;
   double calib_factor2_;
 
-
   bool ctrl_flag_;
-
+  bool dxl_comm_flag_;
+  
+  afx_msg void OnBnClickedExit();
 };
 
