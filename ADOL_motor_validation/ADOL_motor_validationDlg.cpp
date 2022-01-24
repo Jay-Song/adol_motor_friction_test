@@ -361,7 +361,7 @@ void CADOL_motor_validationDlg::terminateCommDXL(void)
   }
 }
 
-bool CADOL_motor_validationDlg::initializeDXLParam(void)
+bool CADOL_motor_validationDlg::initializeDXLIndirectAddr(void)
 {
   //indirect address of brake motor
   uint8_t num_indirect_addr_set = 22;
@@ -447,7 +447,16 @@ bool CADOL_motor_validationDlg::initializeDXLParam(void)
   if (dxl_error != 0)
     printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
 
+  return true;
+}
 
+bool CADOL_motor_validationDlg::initializeDXLParam(void)
+{
+  if (initializeDXLIndirectAddr() == false)
+    return false;
+
+  int dxl_result;
+  uint8_t dxl_error = 0;
   // change operating mode of driving motor
   driving_dxl_ctrl_mode_ = map_idx_to_ctrl_mode_[driving_ctrl_mode_combo_.GetCurSel()];
   dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_id_driving_, XM430::ADDR_OPERATING_MODE, driving_dxl_ctrl_mode_, &dxl_error);
@@ -586,18 +595,24 @@ void CADOL_motor_validationDlg::updateGoalValues(void)
   if (ctrl_flag_ == false)
     return;
 
-  data_idx_++;
+  if (dxl_comm_flag_ == true)
+    return;
 
   if (data_idx_ >= goal_vel_xm430_list_.size())
     data_idx_ = 0;
 
   goal_velocity_xm430_.i32_value = goal_vel_xm430_list_[data_idx_];
   goal_pwm_mx28_.i16_value = goal_pwm_mx28_list_[data_idx_];
+
+  data_idx_++;
 }
 
 void CADOL_motor_validationDlg::changeGoalValues(void)
 {
   if (ctrl_flag_ == false)
+    return;
+
+  if (dxl_comm_flag_ == true)
     return;
 
   int dxl_result = 0;
@@ -625,9 +640,6 @@ void CADOL_motor_validationDlg::changeGoalValues(void)
 
 bool CADOL_motor_validationDlg::readValuesFromDXLsTx(void)
 {
-  if (dxl_comm_flag_ == true)
-    return true;
-
   int dxl_result = dxl_bulk_read_->txPacket();
   if (dxl_result != COMM_SUCCESS)
   {
@@ -639,9 +651,6 @@ bool CADOL_motor_validationDlg::readValuesFromDXLsTx(void)
 
 bool CADOL_motor_validationDlg::readValuesFromDXLsRx(void)
 {
-  if (dxl_comm_flag_ == true)
-    return true;
-
   int dxl_result = dxl_bulk_read_->rxPacket();
   if (dxl_result != COMM_SUCCESS)
   {
@@ -661,6 +670,15 @@ bool CADOL_motor_validationDlg::readValuesFromDXLsRx(void)
   return true;
 }
 
+bool CADOL_motor_validationDlg::readValuesFromDXLsTxRx(void)
+{
+  if (dxl_comm_flag_ == true)
+    return true;
+
+  readValuesFromDXLsTx();
+  readValuesFromDXLsRx();
+}
+
 //For Phidget
 void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputHandle ch, void * ctx, double voltageRatio) {
 
@@ -675,13 +693,9 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
 
   test_dlg->updateGoalValues();
   test_dlg->changeGoalValues();
-  test_dlg->readValuesFromDXLsTx();
-
-  //test_dlg->arduino_.txRxPacket(); // excute this in the multimedia timer
   float mx28_curr_mA = test_dlg->arduino_.getCurrent();
 
-  test_dlg->readValuesFromDXLsRx();
-
+  test_dlg->readValuesFromDXLsTxRx();
 
   test_dlg->curr_result_.elapsed_time_sec_ = test_dlg->elapsed_time;
   test_dlg->curr_result_.voltage_output_v_ = voltageRatio;
@@ -691,10 +705,12 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   test_dlg->curr_result_.goal_pwm_xm430_ = test_dlg->goal_pwm_xm430_.i16_value;
   test_dlg->curr_result_.goal_curr_xm430_ = test_dlg->goal_curr_xm430_.i16_value;
 
+  test_dlg->curr_result_.goal_pwm_mx28_ = test_dlg->goal_pwm_mx28_.i16_value;
   test_dlg->curr_result_.arduino_curr_mx28_mA_ = mx28_curr_mA;
 
 
   if (test_dlg->print_enable_ == true)
+  {
     printf("t: %lf vol*10^8: %lf f: %lf gc : %d cv: %d cp: %d ct: %d cc: %d mcv: %d mcp: %d mct: %d curr: %f\n",
       test_dlg->elapsed_time,
       voltageRatio*100000000.0,
@@ -709,8 +725,8 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
       test_dlg->curr_result_.present_temperature_mx28_,
       mx28_curr_mA);
 
-  if (test_dlg->print_enable_ == true)
-  {
+    test_dlg->arr_result_data_.push_back(test_dlg->curr_result_);
+
     g_mutex.Lock();
     //test_dlg->time_stamps.push_back(test_dlg->time_stamps[test_dlg->time_stamps.size() - 1] + test_dlg->elapsed_time);
     test_dlg->time_stamps.push_back(test_dlg->elapsed_time);
@@ -930,18 +946,11 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
   CTime cTime = CTime::GetCurrentTime(); // get current date and time
   CString file_path;
 
-    file_path.Format(_T("log_val_%04d%02d%02d%02d%02d%02d.txt"),
-      cTime.GetYear(), cTime.GetMonth(),
-      cTime.GetDay(), cTime.GetHour(),
-      cTime.GetMinute(),
-      cTime.GetSecond());
-
-  //file_path.Format(_T("log_vel%d_pwm%d_cur%d_%04d%02d%02d%02d%02d%02d.txt"),
-  //  arr_goal_velocity_xm430_[0], arr_goal_pwm_xm430_[0], arr_goal_curr_xm430_[0],
-  //  cTime.GetYear(), cTime.GetMonth(),
-  //  cTime.GetDay(), cTime.GetHour(),
-  //  cTime.GetMinute(),
-  //  cTime.GetSecond());
+  file_path.Format(_T("log_val_%04d%02d%02d%02d%02d%02d.txt"),
+    cTime.GetYear(), cTime.GetMonth(),
+    cTime.GetDay(), cTime.GetHour(),
+    cTime.GetMinute(),
+    cTime.GetSecond());
 
   log_file.open(file_path);
   log_file << std::fixed;
@@ -957,17 +966,17 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
       << arr_result_data_[arr_idx].voltage_output_v_             << "\t"
       << arr_result_data_[arr_idx].measured_weight_g_            << "\t"
       << arr_result_data_[arr_idx].goal_velocity_xm430_          << "\t"
-      << arr_result_data_[arr_idx].goal_pwm_xm430_               << "\t"
+      << (unsigned int) arr_result_data_[arr_idx].goal_pwm_xm430_               << "\t"
       << arr_result_data_[arr_idx].goal_curr_xm430_              << "\t"
-      << arr_result_data_[arr_idx].present_temperature_xm430_    << "\t"
+      << (unsigned int) arr_result_data_[arr_idx].present_temperature_xm430_    << "\t"
       << arr_result_data_[arr_idx].present_current_xm430_        << "\t"
       << arr_result_data_[arr_idx].present_velocity_xm430_       << "\t"
       << arr_result_data_[arr_idx].present_position_xm430_       << "\t"
-      << arr_result_data_[arr_idx].present_temperature_mx28_     << "\t"
+      << (unsigned int) arr_result_data_[arr_idx].present_temperature_mx28_     << "\t"
       << arr_result_data_[arr_idx].present_velocity_mx28_        << "\t"
       << arr_result_data_[arr_idx].present_position_mx28_        << "\t"
       << arr_result_data_[arr_idx].arduino_curr_mx28_mA_         << "\t"
-      << arr_result_data_[arr_idx].goal_pwm_mx28_                << "\t"
+      << (unsigned int) arr_result_data_[arr_idx].goal_pwm_mx28_                << "\t"
       << std::endl;
   }
 
@@ -978,11 +987,13 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
 
 void CADOL_motor_validationDlg::OnBnClickedSetCalib()
 {
-	// TODO: Add your control notification handler code here
+
 }
 
 void CADOL_motor_validationDlg::OnBnClickedCtrlStart()
 {
+  ctrl_flag_ = false;
+  Sleep(8);
   loadData();
   ctrl_flag_ = true;
 }
@@ -996,21 +1007,27 @@ void CALLBACK procArduinoCurrent(UINT m_nTimerID, UINT uMsg, DWORD_PTR dwUser, D
 void CADOL_motor_validationDlg::OnBnClickedCtrlReboot()
 {
   ctrl_flag_ = false;
-  
+  dxl_comm_flag_ = true;
+
   print_enable_ = false;
   OnBnClickedClear();
 
-  dxl_comm_flag_ = true;
-
   Sleep(8); // wait 8 ms which is one control cycle
   
-  if (turnTorqueOnDXL(false) == true) // turn of the torque
-    std::cout << "Succeeded in turning torque off" << std::endl; 
+
+  dxl_port_->clearPort();
+  if (turnTorqueOnDXL(false) == true) // turn off the torque
+    std::cout << "Succeeded in turning torque off" << std::endl;
+  else
+    std::cout << "Failed to turn torque off" << std::endl;
+
+
+  Sleep(8); // wait 8 ms which is one control cycle
 
   uint8_t dxl_result = 0 , dxl_error = 0;
   dxl_result = dxl_packet_->reboot(dxl_port_, dxl_id_driving_, &dxl_error);
   if (dxl_result == COMM_SUCCESS)
-    std::cout << "Succeeded in rebooting the driving motor" << std::endl; // turn of the torque
+    std::cout << "Succeeded in rebooting the driving motor" << std::endl; 
   else
   {
     std::cout << "Failed to reboot the driving motor" << std::endl;
@@ -1020,11 +1037,9 @@ void CADOL_motor_validationDlg::OnBnClickedCtrlReboot()
   if (dxl_error != 0)
     printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
 
-
-
   dxl_packet_->reboot(dxl_port_, dxl_id_test_, &dxl_error);
   if (dxl_result == COMM_SUCCESS)
-    std::cout << "Succeeded in rebooting the test motor" << std::endl; // turn of the torque
+    std::cout << "Succeeded in rebooting the test motor" << std::endl;
   else
   {
     std::cout << "Failed to reboot the test motor" << std::endl;
@@ -1034,12 +1049,24 @@ void CADOL_motor_validationDlg::OnBnClickedCtrlReboot()
   if (dxl_error != 0)
     printf("%s\n", dxl_packet_->getRxPacketError(dxl_error));
 
+  Sleep(1000); // wait 1000 ms to waiting for motor to turn on
+
+  if (initializeDXLIndirectAddr() == false) // re-initialize indirect address setting because it is in the ram area.
+    return;
+
+  if (turnTorqueOnDXL(true) == true) // turn of the torque
+    std::cout << "Succeeded in turning torque on" << std::endl;
+  else
+    std::cout << "Failed to turn torque on" << std::endl;
+
+  QueryPerformanceCounter(&BeginTime);
   dxl_comm_flag_ = false;
 }
 
 void CADOL_motor_validationDlg::OnBnClickedExit()
 {
   OnBnClickedCtrlReboot();
+  turnTorqueOnDXL(false);
 
   if (dxl_port_ != 0)
   {

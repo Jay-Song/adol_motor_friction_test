@@ -91,6 +91,7 @@ public:
   afx_msg void OnBnClickedDisconnect();
   afx_msg void OnBnClickedCtrlStart();
   afx_msg void OnBnClickedCtrlReboot();
+  afx_msg void OnBnClickedExit();
 
   CComboBox comport_combo_;
   CComboBox baud_combo_;
@@ -108,6 +109,7 @@ public:
   dynamixel::GroupBulkRead* dxl_bulk_read_;
   bool initializeCommDXL(void);
   bool initializeDXLParam(void);
+  bool initializeDXLIndirectAddr(void);
   bool turnTorqueOnDXL(bool on_off);
 
   void updateGoalValues(void);
@@ -115,6 +117,7 @@ public:
 
   bool readValuesFromDXLsTx(void);
   bool readValuesFromDXLsRx(void);
+  bool readValuesFromDXLsTxRx(void);
 
   uint8_t driving_dxl_ctrl_mode_;
   uint8_t test_dxl_ctrl_mode_;
@@ -189,7 +192,5 @@ public:
 
   bool ctrl_flag_;
   bool dxl_comm_flag_;
-  
-  afx_msg void OnBnClickedExit();
-};
 
+};
