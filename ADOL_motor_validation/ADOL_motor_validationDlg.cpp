@@ -966,7 +966,7 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
       << arr_result_data_[arr_idx].voltage_output_v_             << "\t"
       << arr_result_data_[arr_idx].measured_weight_g_            << "\t"
       << arr_result_data_[arr_idx].goal_velocity_xm430_          << "\t"
-      << (unsigned int) arr_result_data_[arr_idx].goal_pwm_xm430_               << "\t"
+      << (int) arr_result_data_[arr_idx].goal_pwm_xm430_               << "\t"
       << arr_result_data_[arr_idx].goal_curr_xm430_              << "\t"
       << (unsigned int) arr_result_data_[arr_idx].present_temperature_xm430_    << "\t"
       << arr_result_data_[arr_idx].present_current_xm430_        << "\t"
@@ -976,7 +976,7 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
       << arr_result_data_[arr_idx].present_velocity_mx28_        << "\t"
       << arr_result_data_[arr_idx].present_position_mx28_        << "\t"
       << arr_result_data_[arr_idx].arduino_curr_mx28_mA_         << "\t"
-      << (unsigned int) arr_result_data_[arr_idx].goal_pwm_mx28_                << "\t"
+      << (int) arr_result_data_[arr_idx].goal_pwm_mx28_                << "\t"
       << std::endl;
   }
 
