@@ -187,6 +187,7 @@
     <ClInclude Include="ADOL_motor_validation.h" />
     <ClInclude Include="ADOL_motor_validationDlg.h" />
     <ClInclude Include="arduino_current_reader.h" />
+    <ClInclude Include="dxl_ctrl.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="serial_comm_win.h" />
     <ClInclude Include="stdafx.h" />

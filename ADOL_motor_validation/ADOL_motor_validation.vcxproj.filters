@@ -39,6 +39,9 @@
     <ClInclude Include="arduino_current_reader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dxl_ctrl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ADOL_motor_validation.cpp">

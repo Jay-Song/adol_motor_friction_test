@@ -15,6 +15,8 @@
 #define new DEBUG_NEW
 #endif
 
+#define PROTOCOL_VERSION 2.0
+
 #define DEFAULT_CALIB_FACTOR1 (1048659.47918428)
 #define DEFAULT_CALIB_FACTOR2 (-1838.691939)
 
@@ -140,12 +142,12 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   //Initializing control mode combo
   driving_ctrl_mode_combo_.AddString(L" 0: Current");
   driving_ctrl_mode_combo_.AddString(L" 1: Velcoity");
-  driving_ctrl_mode_combo_.AddString(L" 3: Position");
+  driving_ctrl_mode_combo_.AddString(L" 4: Position");
   driving_ctrl_mode_combo_.AddString(L"16: PWM");
 
   test_ctrl_mode_combo_.AddString(L" 0: Invalid");
   test_ctrl_mode_combo_.AddString(L" 1: Velcoity");
-  test_ctrl_mode_combo_.AddString(L" 3: Position");
+  test_ctrl_mode_combo_.AddString(L" 4: Position");
   test_ctrl_mode_combo_.AddString(L"16: PWM");
   //test_ctrl_mode_combo_.AddString(L"100: torque off");
 
@@ -156,7 +158,7 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
 
   map_idx_to_ctrl_mode_[0] = 0;
   map_idx_to_ctrl_mode_[1] = 1;
-  map_idx_to_ctrl_mode_[2] = 3;
+  map_idx_to_ctrl_mode_[2] = 4;
   map_idx_to_ctrl_mode_[3] = 16;
 
   //disable disconnect btn
@@ -568,8 +570,8 @@ void CADOL_motor_validationDlg::loadData(void)
   std::ifstream file;
   file.open("traj.txt");
 
-  goal_vel_xm430_list_.clear();
-  goal_pwm_mx28_list_.clear();
+  goal_xm430_list_.clear();
+  goal_mx28_list_.clear();
 
   std::string srt;
 
@@ -581,8 +583,8 @@ void CADOL_motor_validationDlg::loadData(void)
 
     file >> a;
     file >> b;
-    goal_vel_xm430_list_.push_back(a);
-    goal_pwm_mx28_list_.push_back(b);
+    goal_xm430_list_.push_back(a);
+    goal_mx28_list_.push_back(b);
   }
   file.close();
 
@@ -598,11 +600,26 @@ void CADOL_motor_validationDlg::updateGoalValues(void)
   if (dxl_comm_flag_ == true)
     return;
 
-  if (data_idx_ >= goal_vel_xm430_list_.size())
+  if (data_idx_ >= goal_xm430_list_.size())
     data_idx_ = 0;
 
-  goal_velocity_xm430_.i32_value = goal_vel_xm430_list_[data_idx_];
-  goal_pwm_mx28_.i16_value = goal_pwm_mx28_list_[data_idx_];
+  if (test_dxl_ctrl_mode_ == 1)
+    goal_velocity_mx28_.i32_value = goal_mx28_list_[data_idx_];
+  else if (test_dxl_ctrl_mode_ == 16)
+    goal_pwm_mx28_.i16_value = goal_mx28_list_[data_idx_];
+  else
+    std::cout << "Invalid the Control Mode of the Test Motor" << std::endl;
+
+  if (driving_dxl_ctrl_mode_ == 0)
+    goal_curr_xm430_.i16_value = goal_xm430_list_[data_idx_];
+  else if (driving_dxl_ctrl_mode_ == 1)
+    goal_velocity_xm430_.i32_value = goal_xm430_list_[data_idx_];
+  else if (driving_dxl_ctrl_mode_ == 4)
+    goal_position_xm430_.i32_value = goal_xm430_list_[data_idx_];
+  else if (driving_dxl_ctrl_mode_ == 16)
+    goal_pwm_xm430_.i16_value = goal_xm430_list_[data_idx_];
+  else
+    std::cout << "Invalid the Control Mode of the Driving Motor" << std::endl;
 
   data_idx_++;
 }
@@ -621,13 +638,19 @@ void CADOL_motor_validationDlg::changeGoalValues(void)
     dxl_bulk_write_->changeParam(dxl_id_test_, MX28::ADDR_GOAL_VELOCITY, 4, goal_velocity_mx28_.bytes);
   else if (test_dxl_ctrl_mode_ == 16)
     dxl_bulk_write_->changeParam(dxl_id_test_, MX28::ADDR_GOAL_PWM, 2, goal_pwm_mx28_.bytes);
+  else
+    std::cout << "Invalid the Control Mode of the Test Motor" << std::endl;
 
   if (driving_dxl_ctrl_mode_ == 0)
     dxl_bulk_write_->changeParam(dxl_id_driving_, XM430::ADDR_GOAL_CURRENT, 2, goal_curr_xm430_.bytes);
   else if (driving_dxl_ctrl_mode_ == 1)
     dxl_bulk_write_->changeParam(dxl_id_driving_, XM430::ADDR_GOAL_VELOCITY, 4, goal_velocity_xm430_.bytes);
+  else if (driving_dxl_ctrl_mode_ == 4)
+    dxl_bulk_write_->changeParam(dxl_id_driving_, XM430::ADDR_GOAL_POSITION, 4, goal_position_xm430_.bytes);
   else if (driving_dxl_ctrl_mode_ == 16)
     dxl_bulk_write_->changeParam(dxl_id_driving_, XM430::ADDR_GOAL_PWM, 2, goal_pwm_xm430_.bytes);
+  else
+    std::cout << "Invalid the Control Mode of the Driving Motor" << std::endl;
 
   dxl_result = dxl_bulk_write_->txPacket();
 

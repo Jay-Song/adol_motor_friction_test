@@ -5,53 +5,11 @@
 #pragma once
 #include <phidget22.h>
 #include "afxwin.h"
-#include "dynamixel_sdk\dynamixel_sdk.h"
-#include "control_table_XM430.h"
-#include "control_table_MX28.h"
-#include <Windows.h>
+#include "dxl_ctrl.h"
 #include "ChartHandler.h"
 #include "arduino_current_reader.h"
 
-#define PROTOCOL_VERSION 2.0
 
-union value16
-{
-  int16_t i16_value;
-  uint16_t ui16_value;
-  uint8_t bytes[2];
-};
-
-union value32
-{
-  int32_t i32_value;
-  uint32_t ui32_value;
-  uint8_t bytes[4];
-  float f32_value;
-};
-
-struct ResultData
-{
-  double  elapsed_time_sec_;
-  int32_t goal_velocity_xm430_;
-  int16_t goal_pwm_xm430_;
-  int16_t goal_curr_xm430_;
-
-  uint8_t present_temperature_xm430_;
-  int16_t present_current_xm430_;
-  int32_t present_velocity_xm430_;
-  int32_t present_position_xm430_;
-
-  int32_t goal_velocity_mx28_;
-  int16_t goal_pwm_mx28_;
-
-  uint8_t present_temperature_mx28_;
-  int32_t present_velocity_mx28_;
-  int32_t present_position_mx28_;
-
-  double  voltage_output_v_;
-  double  measured_weight_g_;
-  float   arduino_curr_mx28_mA_;
-};
 
 
 // CADOL_motor_validationDlg dialog
@@ -124,8 +82,8 @@ public:
   std::map<int, int> map_idx_to_ctrl_mode_;
   // 0 - 0: Current Control Mode
   // 1 - 1: Velcoity Control Mode
-  // 2 - 3: Position Control Mode(0 ~360[?)
-  //     4: Extended Position Control Mode(Multi - turn)
+  // (not used) 2 - 3: Position Control Mode(0 ~360[?)
+  // 2   4: Extended Position Control Mode(Multi - turn)
   //     5: Current - based Position Control Mode
   // 3 - 16: PWM Control Mode(Voltage Control Mode)
 
@@ -150,8 +108,9 @@ public:
   //std::vector<double> dxl_brake_vel_raw_;
 
   // input for dxl
-  std::vector<int32_t> goal_vel_xm430_list_;
-  std::vector<int16_t> goal_pwm_mx28_list_;
+  std::vector<int32_t> goal_xm430_list_;
+  std::vector<int32_t> goal_mx28_list_;
+  value32 goal_position_xm430_;
   value32 goal_velocity_xm430_;
   value16 goal_pwm_xm430_;
   value16 goal_curr_xm430_;
