@@ -27,6 +27,7 @@ struct ResultData
   int32_t goal_velocity_xm430_;
   int16_t goal_pwm_xm430_;
   int16_t goal_curr_xm430_;
+  int32_t goal_position_xm430_;
 
   uint8_t present_temperature_xm430_;
   int16_t present_current_xm430_;

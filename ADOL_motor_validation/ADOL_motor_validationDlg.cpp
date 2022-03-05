@@ -174,6 +174,7 @@ BOOL CADOL_motor_validationDlg::OnInitDialog()
   dxl_id_test_ = 1;
   dxl_id_driving_ = 2;
 
+  goal_position_xm430_.i32_value = 0;
   goal_velocity_xm430_.i32_value = 0;
   goal_pwm_xm430_.i16_value = 0;
   goal_curr_xm430_.i16_value = 0;
@@ -509,6 +510,8 @@ bool CADOL_motor_validationDlg::initializeDXLParam(void)
     dxl_bulk_write_->addParam(dxl_id_driving_, XM430::ADDR_GOAL_CURRENT, 2, goal_curr_xm430_.bytes);
   else if (driving_dxl_ctrl_mode_ == 1)
     dxl_bulk_write_->addParam(dxl_id_driving_, XM430::ADDR_GOAL_VELOCITY, 4, goal_velocity_xm430_.bytes);
+  else if (driving_dxl_ctrl_mode_ == 4)
+    dxl_bulk_write_->addParam(dxl_id_driving_, XM430::ADDR_GOAL_POSITION, 4, goal_position_xm430_.bytes);
   else if (driving_dxl_ctrl_mode_ == 16)
     dxl_bulk_write_->addParam(dxl_id_driving_, XM430::ADDR_GOAL_PWM, 2, goal_pwm_xm430_.bytes);
   else
@@ -600,8 +603,10 @@ void CADOL_motor_validationDlg::updateGoalValues(void)
   if (dxl_comm_flag_ == true)
     return;
 
-  if (data_idx_ >= goal_xm430_list_.size())
+  if (data_idx_ >= goal_xm430_list_.size() && driving_dxl_ctrl_mode_ != 4)
     data_idx_ = 0;
+  else if (data_idx_ >= goal_xm430_list_.size() && driving_dxl_ctrl_mode_ == 4)
+    data_idx_ = goal_xm430_list_.size() - 1;
 
   if (test_dxl_ctrl_mode_ == 1)
     goal_velocity_mx28_.i32_value = goal_mx28_list_[data_idx_];
@@ -727,6 +732,7 @@ void __stdcall onVoltageRatioInput0_VoltageRatioChange(PhidgetVoltageRatioInputH
   test_dlg->curr_result_.goal_velocity_xm430_ = test_dlg->goal_velocity_xm430_.i32_value;
   test_dlg->curr_result_.goal_pwm_xm430_ = test_dlg->goal_pwm_xm430_.i16_value;
   test_dlg->curr_result_.goal_curr_xm430_ = test_dlg->goal_curr_xm430_.i16_value;
+  test_dlg->curr_result_.goal_position_xm430_ = test_dlg->goal_position_xm430_.i32_value;
 
   test_dlg->curr_result_.goal_pwm_mx28_ = test_dlg->goal_pwm_mx28_.i16_value;
   test_dlg->curr_result_.arduino_curr_mx28_mA_ = mx28_curr_mA;
@@ -981,7 +987,7 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
   log_file << "time" << "\t" << "voltage_output" << "\t" << "measured_load" << "\t"
     << "des_driving_vel" << "\t" << "des_driving_pwm" << "\t" << "des_driving_curr" << "\t" << "des_driving_temp" << "\t"
     << "mes_driving_curr" << "\t" << "mes_driving_vel" << "\t" << "mes_driving_pos" << "\t"
-    << "mes_test_temp" << "\t" << "mes_test_vel" << "\t" << "mes_test_pos" << "\t" << "mes_test_curr" << "\t" << "des_test_PWM" <<  std::endl;
+    << "mes_test_temp" << "\t" << "mes_test_vel" << "\t" << "mes_test_pos" << "\t" << "mes_test_curr" << "\t" << "des_test_PWM" << "\t" << "des_drv_pos" <<  std::endl;
 
   for (unsigned int arr_idx = 0; arr_idx < arr_result_data_.size(); arr_idx++)
   {
@@ -1000,6 +1006,7 @@ void CADOL_motor_validationDlg::OnBnClickedSave()
       << arr_result_data_[arr_idx].present_position_mx28_        << "\t"
       << arr_result_data_[arr_idx].arduino_curr_mx28_mA_         << "\t"
       << (int) arr_result_data_[arr_idx].goal_pwm_mx28_                << "\t"
+      << arr_result_data_[arr_idx].goal_position_xm430_ << "\t"
       << std::endl;
   }
 
