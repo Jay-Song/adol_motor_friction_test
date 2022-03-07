@@ -30,6 +30,9 @@
     <ClInclude Include="phidget_load_cell.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pid_control.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

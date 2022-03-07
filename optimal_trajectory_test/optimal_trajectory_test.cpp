@@ -1,6 +1,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <time.h>
 #include "optimal_trajectory_test.h"
 
 using namespace adol;
@@ -42,12 +43,7 @@ OptimalTrajectoryTest::~OptimalTrajectoryTest()
   if (load_cell_ != 0)
     delete load_cell_;
 
-  results_array_.clear();
-
-  for (uint32_t i = 0; i < goal_value_list_.size(); i++)
-    goal_value_list_[i].clear();
-
-  goal_value_list_.clear();
+  clearResult();
 }
 
 bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_rate, int dxl_ctrl_mode, std::vector<uint8_t> dxl_ID_list,
@@ -58,6 +54,8 @@ bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_r
   dxl_ID_list_.resize(dxl_ID_list.size());
 
   std::copy(dxl_ID_list.begin(), dxl_ID_list.end(), dxl_ID_list_.begin());
+
+  results_.dxl_data_.resize(dxl_ID_list.size());
 
   dxl_ctrl_ = new CtrlMX28(dxl_ID_list, dxl_ctrl_mode);
   arduino_ = new ArduinoCurrentReader();
@@ -123,7 +121,7 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
       voltageRatio*100000000.0,
       test->load_cell_->measured_weight_g_,
       test->results_.dxl_data_[0].goal_position_mx28_.i32_value,
-      test->results_.dxl_data_[0].goal_position_mx28_.i32_value,
+      test->results_.dxl_data_[0].present_position_mx28_.i32_value,
       test->results_.dxl_data_[0].present_temperature_mx28_,
       test->results_.arduino_curr_mx28_mA_);
 
@@ -168,6 +166,12 @@ bool OptimalTrajectoryTest::loadOptimalTrajectory(std::string file_name)
   goal_data_idx_ = 0;
 }
 
+void OptimalTrajectoryTest::startCtrl()
+{
+  ctrl_flag_ = true;
+  print_flag_ = true;
+}
+
 void OptimalTrajectoryTest::updatdGoalValues()
 {
   if (ctrl_flag_ == false)
@@ -178,13 +182,16 @@ void OptimalTrajectoryTest::updatdGoalValues()
     if(dxl_ctrl_->dxl_ctrl_mode_ != 4)
       goal_data_idx_ = 0;
     else 
+    {
       goal_data_idx_ = goal_value_list_.size() - 1;
+      ctrl_flag_ = false;
+      print_flag_ = false;
+    }
+
   }
 
   //if (dxl_ctrl_->dxl_ctrl_mode_ == 0)
   //  goal_curr_xm430_.i16_value = goal_xm430_list_[data_idx_];
-
-  
   if (dxl_ctrl_->dxl_ctrl_mode_ == 1)
   {
     for (uint32_t id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
@@ -204,4 +211,88 @@ void OptimalTrajectoryTest::updatdGoalValues()
     std::cout << "Invalid the Control Mode of the Driving Motor" << std::endl;
 
   goal_data_idx_++;
+}
+
+const std::string getCurrentDateTime() {
+  time_t     now = time(0); //save current time into time_t
+  struct tm  tstruct;
+  //  char       buf[80];
+  tstruct = *localtime(&now);
+  //  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss ?????? ¨ö¨¬¨¡¢ç¢¬?
+
+  std::stringstream ss;
+  ss << tstruct.tm_year + 1900;
+
+  ss << tstruct.tm_year;
+  ss.width(2);
+  ss.fill('0');
+  ss << tstruct.tm_mon
+    << tstruct.tm_mday
+    << tstruct.tm_hour
+    << tstruct.tm_min
+    << tstruct.tm_sec << ".txt";
+
+  return ss.str();
+}
+
+void OptimalTrajectoryTest::clearResult()
+{
+  for (uint32_t i = 0; i < results_array_.size(); i++)
+    results_array_[i].dxl_data_.clear();
+  
+  results_array_.clear();
+
+  for (uint32_t i = 0; i < goal_value_list_.size(); i++)
+    goal_value_list_[i].clear();
+
+  goal_value_list_.clear();
+}
+
+void OptimalTrajectoryTest::saveTestResult()
+{
+  ctrl_flag_ = false;
+  print_flag_ = false;
+  Sleep(8);
+
+  std::ofstream log_file;
+  std::string file_path = "log_val_" + getCurrentDateTime();
+
+  log_file.open(file_path);
+  log_file << std::fixed;
+  log_file.precision(10);
+  log_file << "time" << "\t" << "voltage_output" << "\t" << "measured_load" << "\t";
+  
+  for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+  {
+    log_file << "des_pos_ID" << dxl_ID_list_[id_idx] << "\t" << "des_vel_ID" << dxl_ID_list_[id_idx] << "\t"
+      << "des_pwm_ID" << dxl_ID_list_[id_idx] << "\t"
+      << "mes_pos_ID" << dxl_ID_list_[id_idx] << "\t" << "mes_vel_ID" << dxl_ID_list_[id_idx] << "\t"
+      << "mes_pwm_ID" << dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID" << dxl_ID_list_[id_idx] << "\t";
+  }
+
+  log_file << "mes_curr" << "\t" << std::endl;
+
+  for (unsigned int arr_idx = 0; arr_idx < results_array_.size(); arr_idx++)
+  {
+    log_file << results_array_[arr_idx].elapsed_time_sec_ << "\t"
+      << results_array_[arr_idx].voltage_output_v_ << "\t"
+      << results_array_[arr_idx].measured_weight_g_ << "\t";
+
+    for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+    {
+      log_file << results_array_[arr_idx].dxl_data_[id_idx].goal_position_mx28_.i32_value << "\t"
+        << results_array_[arr_idx].dxl_data_[id_idx].goal_velocity_mx28_.i32_value << "\t"
+        << (int)results_array_[arr_idx].dxl_data_[id_idx].goal_pwm_mx28_.i16_value << "\t"
+        << results_array_[arr_idx].dxl_data_[id_idx].present_position_mx28_.i32_value << "\t"
+        << results_array_[arr_idx].dxl_data_[id_idx].present_velocity_mx28_.i32_value << "\t"
+        << results_array_[arr_idx].dxl_data_[id_idx].present_pwm_mx28_.i16_value << "\t"
+        << (unsigned int)results_array_[arr_idx].dxl_data_[id_idx].present_temperature_mx28_ << "\t";
+    }
+
+    log_file << results_array_[arr_idx].arduino_curr_mx28_mA_ << std::endl;
+  }
+
+  log_file.close();
+
+  clearResult();
 }

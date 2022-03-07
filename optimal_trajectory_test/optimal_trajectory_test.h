@@ -47,12 +47,17 @@ namespace adol
     bool print_flag_;
     bool ctrl_flag_;
 
+    void startCtrl();
+
     bool initialize(std::string dxl_port_name, int dxl_baud_rate, int dxl_ctrl_mode, std::vector<uint8_t> dxl_ID_list,
       int phidget_channel_num, std::string calibration_file_name, 
       std::string arduino_port_name, int arduino_baud_rate);
 
     bool loadOptimalTrajectory(std::string file_name);
     void updatdGoalValues();
+
+    void clearResult();
+    void saveTestResult();
     
     static void CALLBACK onVoltageRatioChange(PhidgetVoltageRatioInputHandle ch, void * ctx, double voltageRatio);
 

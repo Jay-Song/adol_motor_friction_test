@@ -149,6 +149,7 @@
     <ClInclude Include="dxl_ctrl.h" />
     <ClInclude Include="optimal_trajectory_test.h" />
     <ClInclude Include="phidget_load_cell.h" />
+    <ClInclude Include="pid_control.h" />
     <ClInclude Include="serial_comm_win.h" />
   </ItemGroup>
   <ItemGroup>
