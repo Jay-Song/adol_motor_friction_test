@@ -490,8 +490,8 @@ bool CADOL_motor_validationDlg::initializeDXLParam(void)
 
   //Initialize dxl_bulk_read;
   dxl_bulk_read_ = new dynamixel::GroupBulkRead(dxl_port_, dxl_packet_);
-  dxl_bulk_read_->addParam(dxl_id_test_, XM430::ADDR_INDIRECT_DATA_1, 9);
-  dxl_bulk_read_->addParam(dxl_id_driving_, MX28::ADDR_INDIRECT_DATA_1, 11);
+  dxl_bulk_read_->addParam(dxl_id_test_, MX28::ADDR_INDIRECT_DATA_1, 9);
+  dxl_bulk_read_->addParam(dxl_id_driving_, XM430::ADDR_INDIRECT_DATA_1, 11);
 
   // Initialize dxl_bulk_write
   dxl_bulk_write_ = new dynamixel::GroupBulkWrite(dxl_port_, dxl_packet_);
@@ -581,8 +581,8 @@ void CADOL_motor_validationDlg::loadData(void)
   while (!file.eof())
   {
     int32_t a; int16_t b;
-    std::getline(file, srt);
-    std::stringstream ss(srt);
+    //std::getline(file, srt);
+    //std::stringstream ss(srt);
 
     file >> a;
     file >> b;

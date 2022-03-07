@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.24720.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ADOL_motor_test", "ADOL_motor_test\ADOL_motor_test.vcxproj", "{F6773571-90B1-40C5-84A4-E1667196B7D4}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "motor_measurement_all", "motor_measurement_all\motor_measurement_all.vcxproj", "{D9DD64DC-A960-46DA-BC04-F49DE8C1EB19}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ADOL_motor_validation", "ADOL_motor_validation\ADOL_motor_validation.vcxproj", "{7C8525C1-6F63-42F4-B2C4-A8428DE871CD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "optimal_trajectory_test", "optimal_trajectory_test\optimal_trajectory_test.vcxproj", "{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +63,14 @@ Global
 		{7C8525C1-6F63-42F4-B2C4-A8428DE871CD}.Release|x64.Build.0 = Release|x64
 		{7C8525C1-6F63-42F4-B2C4-A8428DE871CD}.Release|x86.ActiveCfg = Release|Win32
 		{7C8525C1-6F63-42F4-B2C4-A8428DE871CD}.Release|x86.Build.0 = Release|Win32
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Debug|x64.ActiveCfg = Debug|x64
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Debug|x64.Build.0 = Debug|x64
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Debug|x86.ActiveCfg = Debug|Win32
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Debug|x86.Build.0 = Debug|Win32
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Release|x64.ActiveCfg = Release|x64
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Release|x64.Build.0 = Release|x64
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Release|x86.ActiveCfg = Release|Win32
+		{EA9F6DB6-23B1-4178-88CE-445C98E8D8C6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
