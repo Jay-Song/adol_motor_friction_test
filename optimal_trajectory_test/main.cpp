@@ -9,7 +9,10 @@ int main(void)
   id_list.push_back(1);
 
   optimal_test.loadOptimalTrajectory("traj.txt");
-  optimal_test.initialize("COM4", 1000000, 4, id_list, 1, "calib.txt", "COM3", 1000000);
+  optimal_test.initialize("COM4", 1000000, 4, id_list, 
+    1, "calib.txt", 
+    "COM3", 1000000,
+    0,0,0);
 
   Sleep(1000);
 

@@ -158,6 +158,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="optimal_trajectory_test.cpp" />
     <ClCompile Include="phdiget_load_cell.cpp" />
+    <ClCompile Include="pid_control.cpp" />
     <ClCompile Include="serial_comm_win.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

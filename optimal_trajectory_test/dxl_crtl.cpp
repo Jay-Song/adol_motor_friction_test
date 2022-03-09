@@ -9,6 +9,7 @@ using namespace adol;
 ResultDataMX28::ResultDataMX28()
 {
   dxl_id_                       = 0;
+  goal_position_mx28_with_pid_.i32_value = 0;
   goal_position_mx28_.i32_value = 0;
   goal_velocity_mx28_.i32_value = 0;
   goal_pwm_mx28_.i16_value      = 0;
@@ -205,7 +206,7 @@ void CtrlMX28::changeGoalValues(std::vector<ResultDataMX28>& dxl_data)
     if (dxl_ctrl_mode_ == 1)
       dxl_sync_write_->changeParam(dxl_ID_list_[id_idx], dxl_data[id_idx].goal_velocity_mx28_.bytes);
     else if (dxl_ctrl_mode_ == 4)
-      dxl_sync_write_->changeParam(dxl_ID_list_[id_idx], dxl_data[id_idx].goal_position_mx28_.bytes);
+      dxl_sync_write_->changeParam(dxl_ID_list_[id_idx], dxl_data[id_idx].goal_position_mx28_with_pid_.bytes);
     else if (dxl_ctrl_mode_ == 16)
       dxl_sync_write_->changeParam(dxl_ID_list_[id_idx], dxl_data[id_idx].goal_pwm_mx28_.bytes);
     else

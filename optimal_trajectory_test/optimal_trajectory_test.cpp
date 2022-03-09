@@ -48,7 +48,8 @@ OptimalTrajectoryTest::~OptimalTrajectoryTest()
 
 bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_rate, int dxl_ctrl_mode, std::vector<uint8_t> dxl_ID_list,
   int phidget_channel_num, std::string calibration_file_name,
-  std::string arduino_port_name, int arduino_baud_rate)
+  std::string arduino_port_name, int arduino_baud_rate, 
+  double p_gain, double i_gain, double d_gain)
 {
   dxl_ID_list_.clear();
   dxl_ID_list_.resize(dxl_ID_list.size());
@@ -56,6 +57,12 @@ bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_r
   std::copy(dxl_ID_list.begin(), dxl_ID_list.end(), dxl_ID_list_.begin());
 
   results_.dxl_data_.resize(dxl_ID_list.size());
+  pid_.resize(dxl_ID_list.size());
+
+  for (uint32_t id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+  {
+    pid_[id_idx].initialize(0.008, p_gain, i_gain, d_gain);
+  }
 
   dxl_ctrl_ = new CtrlMX28(dxl_ID_list, dxl_ctrl_mode);
   arduino_ = new ArduinoCurrentReader();
@@ -75,8 +82,6 @@ bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_r
 
   if (dxl_ctrl_->turnTorqueOnDXL(true) == false)
     return false;
-
-
 
   load_cell_->ctx_ = this;
   load_cell_->getCalibFactor(calibration_file_name);
@@ -103,16 +108,16 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
   test->results_.voltage_output_v_ = voltageRatio;
   test->load_cell_->measured_weight_g_ = voltageRatio*test->load_cell_->calib1_ + test->load_cell_->calib2_;
   test->results_.arduino_curr_mx28_mA_ = test->arduino_->getCurrent();
-  
+
+  test->dxl_ctrl_->dxl_sync_read_->rxPacket();
+  test->dxl_ctrl_->readValuesFromDXLsRx(test->results_.dxl_data_);
+
   if (test->ctrl_flag_ == true)
   {
     test->updatdGoalValues();
     test->dxl_ctrl_->changeGoalValues(test->results_.dxl_data_);
     test->dxl_ctrl_->dxl_sync_write_->txPacket();
   }
-
-  test->dxl_ctrl_->dxl_sync_read_->txRxPacket();
-  test->dxl_ctrl_->readValuesFromDXLsRx(test->results_.dxl_data_);
 
   if (test->print_flag_ == true)
   {
@@ -127,8 +132,8 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
 
     test->results_array_.push_back(test->results_);
   }
+  test->dxl_ctrl_->dxl_sync_read_->txPacket();
 }
-
 
 bool OptimalTrajectoryTest::loadOptimalTrajectory(std::string file_name)
 {
@@ -187,7 +192,6 @@ void OptimalTrajectoryTest::updatdGoalValues()
       ctrl_flag_ = false;
       print_flag_ = false;
     }
-
   }
 
   //if (dxl_ctrl_->dxl_ctrl_mode_ == 0)
@@ -200,7 +204,13 @@ void OptimalTrajectoryTest::updatdGoalValues()
   else if (dxl_ctrl_->dxl_ctrl_mode_ == 4)
   {
     for (uint32_t id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+    {
       results_.dxl_data_[id_idx].goal_position_mx28_.i32_value = goal_value_list_[goal_data_idx_][id_idx];
+      results_.dxl_data_[id_idx].goal_position_mx28_with_pid_.i32_value =
+        goal_value_list_[goal_data_idx_][id_idx] + 
+        pid_[id_idx].getOutput(goal_value_list_[goal_data_idx_][id_idx],
+        results_.dxl_data_[id_idx].present_position_mx28_.i32_value);
+    }
   }
   else if (dxl_ctrl_->dxl_ctrl_mode_ == 16)
   {
@@ -217,7 +227,7 @@ const std::string getCurrentDateTime() {
   time_t     now = time(0); //save current time into time_t
   struct tm  tstruct;
   //  char       buf[80];
-  tstruct = *localtime(&now);
+  localtime_s(&tstruct, &now);
   //  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss ?????? ¨ö¨¬¨¡¢ç¢¬?
 
   std::stringstream ss;
@@ -264,10 +274,10 @@ void OptimalTrajectoryTest::saveTestResult()
   
   for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
   {
-    log_file << "des_pos_ID" << dxl_ID_list_[id_idx] << "\t" << "des_vel_ID" << dxl_ID_list_[id_idx] << "\t"
-      << "des_pwm_ID" << dxl_ID_list_[id_idx] << "\t"
-      << "mes_pos_ID" << dxl_ID_list_[id_idx] << "\t" << "mes_vel_ID" << dxl_ID_list_[id_idx] << "\t"
-      << "mes_pwm_ID" << dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID" << dxl_ID_list_[id_idx] << "\t";
+    log_file << "des_pos_ID_" << dxl_ID_list_[id_idx] << "\t" << "des_pid_pos_ID_" << dxl_ID_list_[id_idx] << "\t"
+      << "des_vel_ID_" << dxl_ID_list_[id_idx] << "\t" << "des_pwm_ID_" << dxl_ID_list_[id_idx] << "\t"
+      << "mes_pos_ID_" << dxl_ID_list_[id_idx] << "\t" << "mes_vel_ID_" << dxl_ID_list_[id_idx] << "\t"
+      << "mes_pwm_ID_" << dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID_" << dxl_ID_list_[id_idx] << "\t";
   }
 
   log_file << "mes_curr" << "\t" << std::endl;
@@ -281,6 +291,7 @@ void OptimalTrajectoryTest::saveTestResult()
     for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
     {
       log_file << results_array_[arr_idx].dxl_data_[id_idx].goal_position_mx28_.i32_value << "\t"
+        << results_array_[arr_idx].dxl_data_[id_idx].goal_position_mx28_with_pid_.i32_value << "\t"
         << results_array_[arr_idx].dxl_data_[id_idx].goal_velocity_mx28_.i32_value << "\t"
         << (int)results_array_[arr_idx].dxl_data_[id_idx].goal_pwm_mx28_.i16_value << "\t"
         << results_array_[arr_idx].dxl_data_[id_idx].present_position_mx28_.i32_value << "\t"

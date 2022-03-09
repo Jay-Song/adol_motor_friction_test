@@ -53,5 +53,8 @@
     <ClCompile Include="optimal_trajectory_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="pid_control.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

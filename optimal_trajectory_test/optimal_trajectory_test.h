@@ -3,6 +3,7 @@
 #include "dxl_ctrl.h"
 #include "arduino_current_reader.h"
 #include "phidget_load_cell.h"
+#include "pid_control.h"
 
 namespace adol
 {
@@ -43,6 +44,7 @@ namespace adol
     LARGE_INTEGER Endtime;
 
     std::vector<uint8_t> dxl_ID_list_;
+    std::vector<PIDControl> pid_;
 
     bool print_flag_;
     bool ctrl_flag_;
@@ -51,7 +53,8 @@ namespace adol
 
     bool initialize(std::string dxl_port_name, int dxl_baud_rate, int dxl_ctrl_mode, std::vector<uint8_t> dxl_ID_list,
       int phidget_channel_num, std::string calibration_file_name, 
-      std::string arduino_port_name, int arduino_baud_rate);
+      std::string arduino_port_name, int arduino_baud_rate,
+      double p_gain, double i_gain, double d_gain);
 
     bool loadOptimalTrajectory(std::string file_name);
     void updatdGoalValues();

@@ -29,6 +29,7 @@ namespace adol
     ~ResultDataMX28();
 
     uint8_t dxl_id_;
+    value32 goal_position_mx28_with_pid_;
     value32 goal_position_mx28_;
     value32 goal_velocity_mx28_;
     value16 goal_pwm_mx28_;
