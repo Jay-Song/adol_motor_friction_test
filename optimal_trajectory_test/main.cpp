@@ -8,11 +8,12 @@ int main(void)
   std::vector<uint8_t> id_list;
   id_list.push_back(1);
 
-  optimal_test.loadOptimalTrajectory("traj.txt");
   optimal_test.initialize("COM4", 1000000, 4, id_list, 
     1, "calib.txt", 
     "COM3", 1000000,
-    0,0,0);
+    1.0,0,0);
+
+  optimal_test.loadOptimalTrajectory("tau_sq_optimal_rediscretized_test.txt");
 
   Sleep(1000);
 

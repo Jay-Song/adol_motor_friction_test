@@ -37,6 +37,7 @@ bool ArduinoCurrentReader::txPacket()
     return false;
 
   serial_->setPacketTimeout(9 + 1); // +1 is just safety factor
+  return true;
 }
 
 bool ArduinoCurrentReader::rxPacket()
@@ -126,10 +127,16 @@ bool ArduinoCurrentReader::rxPacket()
 bool ArduinoCurrentReader::txRxPacket()
 {
   if (txPacket() == false)
+  {
+    std::cout << "faile to send arduino" << std::endl;
     return false;
+  }
   
   if (rxPacket() == false)
+  {
+    std::cout << "faile to receive arduino" << std::endl;
     return false;
+  }
 }
 
 float ArduinoCurrentReader::getCurrent()
@@ -173,6 +180,16 @@ void ArduinoCurrentReader::startTimer()
   TIMECAPS timecaps;
   timeGetDevCaps(&timecaps, sizeof(TIMECAPS));
   time_id_ = timeSetEvent(8, timecaps.wPeriodMin, procArduinoCurrentCallback, (DWORD_PTR)this, TIME_PERIODIC | TIME_CALLBACK_FUNCTION);
+  if (time_id_ == 0)
+  {
+    std::cout << "Failed to make a timer for Arduino" <<std::endl;
+    return;
+  }
+  else
+  {
+    std::cout << "Succeeded in creating timer for arduino" << std::endl;
+  }
+
 }
 
 void ArduinoCurrentReader::stopTimer()

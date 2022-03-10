@@ -30,6 +30,8 @@ CtrlMX28::CtrlMX28(std::vector<uint8_t> dxl_ID_list, uint8_t dxl_ctrl_mode)
   dxl_packet_     = 0;
   dxl_sync_write_ = 0;
   dxl_sync_read_  = 0;
+  
+  dxl_ctrl_mode_ = dxl_ctrl_mode;
 
   dxl_ID_list_.resize(dxl_ID_list.size());
   std::copy(dxl_ID_list.begin(), dxl_ID_list.end(), dxl_ID_list_.begin());
@@ -81,23 +83,24 @@ bool CtrlMX28::initializeDXLParam(void)
 
   for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
   {
-
     dxl_result = dxl_packet_->write1ByteTxRx(dxl_port_, dxl_ID_list_[id_idx], MX28::ADDR_OPERATING_MODE, dxl_ctrl_mode_, &dxl_error);
     if (dxl_result == COMM_SUCCESS)
     {
-      std::cout << "Succeeded in changing the Operating Mode of ID " << dxl_ID_list_[id_idx] <<  std::endl;
+      std::cout << "Succeeded in changing the Operating Mode of ID " << (int)dxl_ID_list_[id_idx] <<  std::endl;
       Sleep(200);
     }
     else
     {
-      std::cout << "Failed to change the Operating Mode of ID " << dxl_ID_list_[id_idx] << std::endl;
+      std::cout << "Failed to change the Operating Mode of ID " << (int)dxl_ID_list_[id_idx] << std::endl;
       return false;
     }
   }
 
   // Initialize dxl_sync_read;
   dxl_sync_read_ = new dynamixel::GroupSyncRead(dxl_port_, dxl_packet_, MX28::ADDR_INDIRECT_DATA_1, 11);
-  
+  for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+    dxl_sync_read_->addParam(dxl_ID_list_[id_idx]);
+
   // Initialize dxl_sync_write
   if (dxl_ctrl_mode_ == 1)
     dxl_sync_write_ = new dynamixel::GroupSyncWrite(dxl_port_, dxl_packet_, MX28::ADDR_GOAL_VELOCITY, 4);
@@ -110,6 +113,10 @@ bool CtrlMX28::initializeDXLParam(void)
     std::cout << "Failed to initialize bulk write : the invalid control mode of the test" << std::endl;
     return false;
   }
+
+  uint8_t initial_data[4] = { 0, 0, 0, 0 };
+  for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+    dxl_sync_write_->addParam(dxl_ID_list_[id_idx], initial_data);
 
   return true;
 }
@@ -163,7 +170,7 @@ bool CtrlMX28::initializeDXLIndirectAddr(void)
     }
 
     if (dxl_error != 0)
-      std::cout << "[ID:" << dxl_ID_list_[id_idx] << "] " << dxl_packet_->getRxPacketError(dxl_error) << std::endl;
+      std::cout << "[ID:" << (int) dxl_ID_list_[id_idx] << "] " << dxl_packet_->getRxPacketError(dxl_error) << std::endl;
   }
 
   return true;
@@ -182,12 +189,12 @@ bool CtrlMX28::turnTorqueOnDXL(bool on_off)
 
     if (dxl_result == COMM_SUCCESS)
     {
-      std::cout << "Succeeded in turning the torque state of ID " << dxl_ID_list_[id_idx] << " to " << on_off << std::endl;
+      std::cout << "Succeeded in turning the torque state of ID " << (int)dxl_ID_list_[id_idx] << " to " << on_off << std::endl;
       Sleep(200);
     }
     else
     {
-      std::cout << "Failed to turn the torque state of ID " << dxl_ID_list_[id_idx] << " to " << on_off << std::endl;
+      std::cout << "Failed to turn the torque state of ID " << (int)dxl_ID_list_[id_idx] << " to " << on_off << std::endl;
       return false;
     }
   }
@@ -219,7 +226,7 @@ bool CtrlMX28::readValuesFromDXLsTx(void)
   int dxl_result = dxl_sync_read_->txPacket();
   if (dxl_result != COMM_SUCCESS)
   {
-    std::cout << "Failed to send the tx packet for sync read" << std::endl;
+    std::cout << dxl_result <<"  Failed to send the tx packet for sync read" << std::endl;
     return false;
   }
   return true;
@@ -230,7 +237,7 @@ bool CtrlMX28::readValuesFromDXLsRx(std::vector<ResultDataMX28>& dxl_data)
   int dxl_result = dxl_sync_read_->rxPacket();
   if (dxl_result != COMM_SUCCESS)
   {
-    std::cout << "Failed to receive the rx packet for sync read" << std::endl;
+    std::cout << dxl_result << "  Failed to receive the rx packet for sync read" << std::endl;
     return false;
   }
 

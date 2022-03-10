@@ -77,9 +77,6 @@ bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_r
   if (dxl_ctrl_->initializeDXLParam() == false)
     return false;
 
-  if (dxl_ctrl_->initializeDXLIndirectAddr() == false)
-    return false;
-
   if (dxl_ctrl_->turnTorqueOnDXL(true) == false)
     return false;
 
@@ -87,14 +84,30 @@ bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_r
   load_cell_->getCalibFactor(calibration_file_name);
   load_cell_->onVoltageRatioChangeCallback = onVoltageRatioChange;
 
+  if (arduino_->connect(arduino_port_name, arduino_baud_rate) == false)
+    return false;
+
+  arduino_->txRxPacket();
+  Sleep(1);
+  arduino_->txRxPacket();
+  Sleep(1);
+
+
+  arduino_->startTimer();
+
+  dxl_ctrl_->readValuesFromDXLsTxRx(results_.dxl_data_);
+  dxl_ctrl_->readValuesFromDXLsTxRx(results_.dxl_data_);
+  dxl_ctrl_->readValuesFromDXLsTx();
+  Sleep(1);
+
+
+
   QueryPerformanceCounter(&BeginTime);
   if (load_cell_->initializePhidget() == false)
     return false;
 
-  if (arduino_->connect(arduino_port_name, arduino_baud_rate) == false)
-    return false;
 
-  arduino_->startTimer();
+
 }
 
 void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle ch, void * ctx, double voltageRatio)
@@ -107,9 +120,9 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
 
   test->results_.voltage_output_v_ = voltageRatio;
   test->load_cell_->measured_weight_g_ = voltageRatio*test->load_cell_->calib1_ + test->load_cell_->calib2_;
+  test->results_.measured_weight_g_ = test->load_cell_->measured_weight_g_;
   test->results_.arduino_curr_mx28_mA_ = test->arduino_->getCurrent();
 
-  test->dxl_ctrl_->dxl_sync_read_->rxPacket();
   test->dxl_ctrl_->readValuesFromDXLsRx(test->results_.dxl_data_);
 
   if (test->ctrl_flag_ == true)
@@ -132,13 +145,16 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
 
     test->results_array_.push_back(test->results_);
   }
-  test->dxl_ctrl_->dxl_sync_read_->txPacket();
+  test->dxl_ctrl_->readValuesFromDXLsTx();
 }
 
 bool OptimalTrajectoryTest::loadOptimalTrajectory(std::string file_name)
 {
   std::ifstream file;
   file.open(file_name);
+
+  for (unsigned int i = 0; i < goal_value_list_.size(); i++)
+    goal_value_list_[i].clear();
 
   goal_value_list_.clear();
   
@@ -154,11 +170,17 @@ bool OptimalTrajectoryTest::loadOptimalTrajectory(std::string file_name)
     std::stringstream ss(str);
 
     while (ss >> value)
+    {
+      //std::cout << value << std::endl;
       single_values.push_back(value);
+    }
 
     if (single_values.size() != dxl_ID_list_.size())
     {
-      std::cout << "incorrect data size" << std::endl;
+      //std::cout << "incorrect data size" << single_values.size()  << "   " << dxl_ID_list_.size() << std::endl;
+      file.close();
+
+      goal_data_idx_ = 0;
       return false;
     }
     else
@@ -274,10 +296,10 @@ void OptimalTrajectoryTest::saveTestResult()
   
   for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
   {
-    log_file << "des_pos_ID_" << dxl_ID_list_[id_idx] << "\t" << "des_pid_pos_ID_" << dxl_ID_list_[id_idx] << "\t"
-      << "des_vel_ID_" << dxl_ID_list_[id_idx] << "\t" << "des_pwm_ID_" << dxl_ID_list_[id_idx] << "\t"
-      << "mes_pos_ID_" << dxl_ID_list_[id_idx] << "\t" << "mes_vel_ID_" << dxl_ID_list_[id_idx] << "\t"
-      << "mes_pwm_ID_" << dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID_" << dxl_ID_list_[id_idx] << "\t";
+    log_file << "des_pos_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "des_pid_pos_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
+      << "des_vel_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "des_pwm_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
+      << "mes_pos_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "mes_vel_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
+      << "mes_pwm_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID_" << (int)dxl_ID_list_[id_idx] << "\t";
   }
 
   log_file << "mes_curr" << "\t" << std::endl;
