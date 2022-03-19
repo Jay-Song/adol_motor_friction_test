@@ -101,8 +101,8 @@ bool OptimalTrajectoryTest::initialize(std::string dxl_port_name, int dxl_baud_r
   Sleep(1);
 
 
-
-  QueryPerformanceCounter(&BeginTime);
+  QueryPerformanceFrequency(&cpu_frequency_);
+  QueryPerformanceCounter(&ctrl_begin_time_);
   if (load_cell_->initializePhidget() == false)
     return false;
 
@@ -114,9 +114,9 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
 {
   OptimalTrajectoryTest* test = (OptimalTrajectoryTest*)ctx;
 
-  QueryPerformanceCounter(&(test->Endtime));
-  uint64_t elapsed = test->Endtime.QuadPart - test->BeginTime.QuadPart;
-  test->results_.elapsed_time_sec_ = (double)elapsed / (double)test->Frequency.QuadPart;
+  QueryPerformanceCounter(&(test->ctrl_end_time_));
+  uint64_t elapsed = test->ctrl_end_time_.QuadPart - test->ctrl_begin_time_.QuadPart;
+  test->results_.elapsed_time_sec_ = (double) elapsed / (double) test->cpu_frequency_.QuadPart;
 
   test->results_.voltage_output_v_ = voltageRatio;
   test->load_cell_->measured_weight_g_ = voltageRatio*test->load_cell_->calib1_ + test->load_cell_->calib2_;
@@ -134,14 +134,15 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
 
   if (test->print_flag_ == true)
   {
-    printf("t: %lf vol*10^8: %lf f: %lf gp : %d cp: %d ct: %d curr: %f\n",
+    printf("t: %lf vol*10^8: %lf f: %lf gp : %d cp: %d ct: %d cc: %f cv: %d\n",
       test->results_.elapsed_time_sec_,
       voltageRatio*100000000.0,
       test->load_cell_->measured_weight_g_,
       test->results_.dxl_data_[0].goal_position_mx28_.i32_value,
       test->results_.dxl_data_[0].present_position_mx28_.i32_value,
       test->results_.dxl_data_[0].present_temperature_mx28_,
-      test->results_.arduino_curr_mx28_mA_);
+      test->results_.arduino_curr_mx28_mA_,
+      test->results_.dxl_data_[0].present_input_voltage_);
 
     test->results_array_.push_back(test->results_);
   }
@@ -248,17 +249,14 @@ void OptimalTrajectoryTest::updatdGoalValues()
 const std::string getCurrentDateTime() {
   time_t     now = time(0); //save current time into time_t
   struct tm  tstruct;
-  //  char       buf[80];
   localtime_s(&tstruct, &now);
-  //  strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct); // YYYY-MM-DD.HH:mm:ss ?????? ¨ö¨¬¨¡¢ç¢¬?
 
   std::stringstream ss;
   ss << tstruct.tm_year + 1900;
 
-  ss << tstruct.tm_year;
   ss.width(2);
   ss.fill('0');
-  ss << tstruct.tm_mon
+  ss << (tstruct.tm_mon + 1) // the month is 0 to 11, so we need to add 1.
     << tstruct.tm_mday
     << tstruct.tm_hour
     << tstruct.tm_min
@@ -299,10 +297,11 @@ void OptimalTrajectoryTest::saveTestResult()
     log_file << "des_pos_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "des_pid_pos_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
       << "des_vel_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "des_pwm_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
       << "mes_pos_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "mes_vel_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
-      << "mes_pwm_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID_" << (int)dxl_ID_list_[id_idx] << "\t";
+      << "mes_pwm_ID_" << (int)dxl_ID_list_[id_idx] << "\t" << "mes_temp_ID_" << (int)dxl_ID_list_[id_idx] << "\t"
+      << "mes_input_vol_ID_" << (int)dxl_ID_list_[id_idx] << "\t";
   }
 
-  log_file << "mes_curr" << "\t" << std::endl;
+  log_file << "mes_curr" << std::endl;
 
   for (unsigned int arr_idx = 0; arr_idx < results_array_.size(); arr_idx++)
   {
@@ -319,7 +318,8 @@ void OptimalTrajectoryTest::saveTestResult()
         << results_array_[arr_idx].dxl_data_[id_idx].present_position_mx28_.i32_value << "\t"
         << results_array_[arr_idx].dxl_data_[id_idx].present_velocity_mx28_.i32_value << "\t"
         << results_array_[arr_idx].dxl_data_[id_idx].present_pwm_mx28_.i16_value << "\t"
-        << (unsigned int)results_array_[arr_idx].dxl_data_[id_idx].present_temperature_mx28_ << "\t";
+        << (unsigned int)results_array_[arr_idx].dxl_data_[id_idx].present_temperature_mx28_ << "\t"
+        << (int)results_array_[arr_idx].dxl_data_[id_idx].present_input_voltage_.i16_value << "\t";
     }
 
     log_file << results_array_[arr_idx].arduino_curr_mx28_mA_ << std::endl;

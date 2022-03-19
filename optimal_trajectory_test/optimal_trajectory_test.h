@@ -39,9 +39,9 @@ namespace adol
     ArduinoCurrentReader* arduino_;
     PhidgetLoadCell* load_cell_;
 
-    LARGE_INTEGER Frequency;
-    LARGE_INTEGER BeginTime;
-    LARGE_INTEGER Endtime;
+    LARGE_INTEGER cpu_frequency_;
+    LARGE_INTEGER ctrl_begin_time_;
+    LARGE_INTEGER ctrl_end_time_;
 
     std::vector<uint8_t> dxl_ID_list_;
     std::vector<PIDControl> pid_;

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <conio.h>
 #include "optimal_trajectory_test.h"
 
 int main(void)
@@ -24,6 +25,10 @@ int main(void)
     Sleep(999);
     if (optimal_test.ctrl_flag_ == false)
       break;
+
+    if (_kbhit())
+      if (_getch() == 27)
+        break;
   }
 
   optimal_test.saveTestResult();

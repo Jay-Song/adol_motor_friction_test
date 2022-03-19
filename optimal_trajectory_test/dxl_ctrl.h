@@ -38,6 +38,7 @@ namespace adol
     value32 present_velocity_mx28_;
     value32 present_position_mx28_;
     uint8_t present_temperature_mx28_;
+    value16 present_input_voltage_;
   };
 
 
@@ -58,6 +59,7 @@ namespace adol
     dynamixel::GroupSyncRead*  dxl_sync_read_;
 
     bool initializeCommDXL(const char* port_name, int baud_rate);
+
     bool initializeDXLParam(void);
     bool initializeDXLIndirectAddr(void);
     bool turnTorqueOnDXL(bool on_off);

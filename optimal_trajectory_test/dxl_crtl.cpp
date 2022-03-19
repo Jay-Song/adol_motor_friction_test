@@ -71,6 +71,69 @@ bool CtrlMX28::initializeCommDXL(const char* port_name, int baud_rate)
   return true;
 }
 
+bool CtrlMX28::initializeDXLIndirectAddr(void)
+{
+  uint8_t num_indirect_addr_set = 26;
+  uint8_t *indirect_addr_array = new uint8_t[num_indirect_addr_set];
+
+  int dxl_result = 0;
+  uint8_t dxl_error = 0;
+
+  indirect_addr_array[0] = DXL_LOBYTE(MX28::ADDR_PRESENT_PWM + 0); //1
+  indirect_addr_array[1] = DXL_HIBYTE(MX28::ADDR_PRESENT_PWM + 0);
+  indirect_addr_array[2] = DXL_LOBYTE(MX28::ADDR_PRESENT_PWM + 1);
+  indirect_addr_array[3] = DXL_HIBYTE(MX28::ADDR_PRESENT_PWM + 1);
+
+  indirect_addr_array[4] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 0); //3
+  indirect_addr_array[5] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 0);
+  indirect_addr_array[6] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 1);
+  indirect_addr_array[7] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 1);
+  indirect_addr_array[8] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 2);
+  indirect_addr_array[9] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 2);
+  indirect_addr_array[10] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 3);
+  indirect_addr_array[11] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 3);
+
+  indirect_addr_array[12] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 0); //7
+  indirect_addr_array[13] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 0);
+  indirect_addr_array[14] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 1);
+  indirect_addr_array[15] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 1);
+  indirect_addr_array[16] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 2);
+  indirect_addr_array[17] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 2);
+  indirect_addr_array[18] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 3);
+  indirect_addr_array[19] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 3);
+
+  indirect_addr_array[20] = DXL_LOBYTE(MX28::ADDR_PRESENT_TEMPERATURE + 0); //11
+  indirect_addr_array[21] = DXL_HIBYTE(MX28::ADDR_PRESENT_TEMPERATURE + 0);
+
+  indirect_addr_array[22] = DXL_LOBYTE(MX28::ADDR_PRESENT_INPUT_VOLTAGY + 0); //12
+  indirect_addr_array[23] = DXL_HIBYTE(MX28::ADDR_PRESENT_INPUT_VOLTAGY + 0);
+  indirect_addr_array[24] = DXL_LOBYTE(MX28::ADDR_PRESENT_INPUT_VOLTAGY + 1);
+  indirect_addr_array[25] = DXL_HIBYTE(MX28::ADDR_PRESENT_INPUT_VOLTAGY + 1);
+
+  for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
+  {
+    dxl_result = dxl_packet_->writeTxRx(dxl_port_, dxl_ID_list_[id_idx], MX28::ADDR_INDIRECT_ADDR_1, num_indirect_addr_set, indirect_addr_array, &dxl_error);
+    if (dxl_result == COMM_SUCCESS)
+    {
+      std::cout << "Succeeded in changing Indirect Address of ID " << dxl_ID_list_[id_idx] << std::endl;
+      Sleep(200);
+    }
+    else
+    {
+      std::cout << "Failed to change Indirect Address of ID " << dxl_ID_list_[id_idx] << std::endl;
+      delete[] indirect_addr_array;
+      return false;
+    }
+
+    if (dxl_error != 0)
+      std::cout << "[ID:" << (int)dxl_ID_list_[id_idx] << "] " << dxl_packet_->getRxPacketError(dxl_error) << std::endl;
+  }
+
+  delete[] indirect_addr_array;
+
+  return true;
+}
+
 bool CtrlMX28::initializeDXLParam(void)
 {
   if (initializeDXLIndirectAddr() == false)
@@ -97,7 +160,7 @@ bool CtrlMX28::initializeDXLParam(void)
   }
 
   // Initialize dxl_sync_read;
-  dxl_sync_read_ = new dynamixel::GroupSyncRead(dxl_port_, dxl_packet_, MX28::ADDR_INDIRECT_DATA_1, 11);
+  dxl_sync_read_ = new dynamixel::GroupSyncRead(dxl_port_, dxl_packet_, MX28::ADDR_INDIRECT_DATA_1, 13);
   for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
     dxl_sync_read_->addParam(dxl_ID_list_[id_idx]);
 
@@ -121,60 +184,6 @@ bool CtrlMX28::initializeDXLParam(void)
   return true;
 }
 
-bool CtrlMX28::initializeDXLIndirectAddr(void)
-{
-  uint8_t num_indirect_addr_set = 22;
-  uint8_t indirect_addr_array[22];
-
-  int dxl_result = 0;
-  uint8_t dxl_error = 0;
-
-  indirect_addr_array[0] = DXL_LOBYTE(MX28::ADDR_PRESENT_PWM + 0);
-  indirect_addr_array[1] = DXL_HIBYTE(MX28::ADDR_PRESENT_PWM + 0);
-  indirect_addr_array[2] = DXL_LOBYTE(MX28::ADDR_PRESENT_PWM + 1);
-  indirect_addr_array[3] = DXL_HIBYTE(MX28::ADDR_PRESENT_PWM + 1);
-
-  indirect_addr_array[4] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 0);
-  indirect_addr_array[5] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 0);
-  indirect_addr_array[6] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 1);
-  indirect_addr_array[7] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 1);
-  indirect_addr_array[8] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 2);
-  indirect_addr_array[9] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 2);
-  indirect_addr_array[10] = DXL_LOBYTE(MX28::ADDR_PRESENT_VELOCITY + 3);
-  indirect_addr_array[11] = DXL_HIBYTE(MX28::ADDR_PRESENT_VELOCITY + 3);
-
-  indirect_addr_array[12] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 0);
-  indirect_addr_array[13] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 0);
-  indirect_addr_array[14] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 1);
-  indirect_addr_array[15] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 1);
-  indirect_addr_array[16] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 2);
-  indirect_addr_array[17] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 2);
-  indirect_addr_array[18] = DXL_LOBYTE(MX28::ADDR_PRESENT_POSITION + 3);
-  indirect_addr_array[19] = DXL_HIBYTE(MX28::ADDR_PRESENT_POSITION + 3);
-
-  indirect_addr_array[20] = DXL_LOBYTE(MX28::ADDR_PRESENT_TEMPERATURE + 0);
-  indirect_addr_array[21] = DXL_HIBYTE(MX28::ADDR_PRESENT_TEMPERATURE + 0);
-
-  for (unsigned int id_idx = 0; id_idx < dxl_ID_list_.size(); id_idx++)
-  {
-    dxl_result = dxl_packet_->writeTxRx(dxl_port_, dxl_ID_list_[id_idx], MX28::ADDR_INDIRECT_ADDR_1, num_indirect_addr_set, indirect_addr_array, &dxl_error);
-    if (dxl_result == COMM_SUCCESS)
-    {
-      std::cout << "Succeeded in changing Indirect Address of ID " << dxl_ID_list_[id_idx] << std::endl;
-      Sleep(200);
-    }
-    else
-    {
-      std::cout << "Failed to change Indirect Address of ID " << dxl_ID_list_[id_idx] << std::endl;
-      return false;
-    }
-
-    if (dxl_error != 0)
-      std::cout << "[ID:" << (int) dxl_ID_list_[id_idx] << "] " << dxl_packet_->getRxPacketError(dxl_error) << std::endl;
-  }
-
-  return true;
-}
 
 bool CtrlMX28::turnTorqueOnDXL(bool on_off)
 {
@@ -247,6 +256,7 @@ bool CtrlMX28::readValuesFromDXLsRx(std::vector<ResultDataMX28>& dxl_data)
     dxl_data[id_idx].present_velocity_mx28_.i32_value = dxl_sync_read_->getData(dxl_ID_list_[id_idx], MX28::ADDR_INDIRECT_DATA_1+2, 4);
     dxl_data[id_idx].present_position_mx28_.i32_value = dxl_sync_read_->getData(dxl_ID_list_[id_idx], MX28::ADDR_INDIRECT_DATA_1+6, 4);
     dxl_data[id_idx].present_temperature_mx28_        = dxl_sync_read_->getData(dxl_ID_list_[id_idx], MX28::ADDR_INDIRECT_DATA_1+10, 1);
+    dxl_data[id_idx].present_input_voltage_.i16_value = dxl_sync_read_->getData(dxl_ID_list_[id_idx], MX28::ADDR_INDIRECT_DATA_1+11, 2);
   }
 
   return true;
