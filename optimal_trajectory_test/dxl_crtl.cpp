@@ -170,7 +170,7 @@ bool CtrlMX28::initializeDXLParam(void)
   else if (dxl_ctrl_mode_ == 4)
     dxl_sync_write_ = new dynamixel::GroupSyncWrite(dxl_port_, dxl_packet_, MX28::ADDR_GOAL_POSITION, 4);
   else if (dxl_ctrl_mode_ == 16)
-    dxl_sync_write_ = new dynamixel::GroupSyncWrite(dxl_port_, dxl_packet_, MX28::ADDR_GOAL_VELOCITY, 2);
+    dxl_sync_write_ = new dynamixel::GroupSyncWrite(dxl_port_, dxl_packet_, MX28::ADDR_GOAL_PWM, 2);
   else
   {
     std::cout << "Failed to initialize bulk write : the invalid control mode of the test" << std::endl;
@@ -183,7 +183,6 @@ bool CtrlMX28::initializeDXLParam(void)
 
   return true;
 }
-
 
 bool CtrlMX28::turnTorqueOnDXL(bool on_off)
 {

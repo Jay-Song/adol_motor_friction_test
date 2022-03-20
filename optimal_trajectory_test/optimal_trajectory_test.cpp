@@ -142,7 +142,7 @@ void OptimalTrajectoryTest::onVoltageRatioChange(PhidgetVoltageRatioInputHandle 
       test->results_.dxl_data_[0].present_position_mx28_.i32_value,
       test->results_.dxl_data_[0].present_temperature_mx28_,
       test->results_.arduino_curr_mx28_mA_,
-      test->results_.dxl_data_[0].present_input_voltage_);
+      test->results_.dxl_data_[0].present_input_voltage_.i16_value);
 
     test->results_array_.push_back(test->results_);
   }
